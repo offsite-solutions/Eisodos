@@ -1,5 +1,5 @@
 {
-  "name": "offsite-solutions/eisodos",
+  "name": "offsite-solutions/Eisodos",
   "description": "Page generator engine",
   "type": "library",
   "authors": [
@@ -10,7 +10,7 @@
   ],
   "minimum-stability": "dev",
   "require": {
-    "php": "~7.2.0 || ~7.3.0 || ~7.4.0",
+    "php": ">=7.2.0",
     "ext-mbstring": "*",
     "psr/log": "^1.0",
     "php-console/php-console": "^3.1",
