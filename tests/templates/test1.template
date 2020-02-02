@@ -1,0 +1,22 @@
+Here are some variables:
+## this line will be skipped
+
+_applicationName: $_applicationName
+$test_parameter:='parameter value added #1';test_parameter: $test_parameter
+test_parameter2: $test_parameter2~='default parameter value';
+Setting parameter default value another parameter
+test_parameter3: $test_parameter3~='$test_parameter';
+
+Some internal parameter:
+$seq, $seq, $seq, $random, $date
+
+Embedding template from inline (safe) path:
+$template_test1embed
+
+Embedding template from absolute path:
+$templateabs_test1embed
+
+Disable templateabs function: $ENABLETEMPLATEABS:='F';
+$templateabs_test1embed
+
+Bye

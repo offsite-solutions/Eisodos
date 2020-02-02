@@ -1,0 +1,66 @@
+Callback template:
+
+<%FUNC%
+function=eq
+param=test2
+value=Y
+true=test2_paramY
+false=test2_paramN
+%FUNC%>
+
+Short form:
+
+[%function=eqs;param=test2;value=Y;true=TRUE;false=FALSE%]
+
+Real parameter function callback:
+
+[%_function_name=eqs;_real_parameters=true;param=test2;value=Y;true=TRUE2;false=FALSE2%]
+
+Multi line parameter support test:
+
+<%FUNC%
+_function_name=eqs
+_real_parameters=Y
+param=test2
+value=Y
+true>>=this is a
+multiline text
+including a $test2 parameter
+<<
+false=
+%FUNC%>
+
+Force parse in parameters / without @value the parameter $test2 will be processed after this block's parsing:
+
+<%FUNC%
+_function_name=eqs
+_real_parameters=Y
+param=test2
+@value=$test2
+true=TRUE3
+false=FALSE3
+%FUNC%>
+
+Function embedding:
+
+$test3:='T';
+
+<%FUNC%
+_function_name=eqs
+_real_parameters=Y
+param=test2
+@value=$test2
+true>>=<%FUNC%
+function=eqs
+param=test3
+value=T
+true>>>=test1	## must use three multiline character, because it is embedded
+two line - TRUE4
+<<<
+false=FALSE4
+%FUNC%>
+<<
+false=FALSE3
+%FUNC%>
+
+

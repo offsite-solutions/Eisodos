@@ -1,0 +1,19 @@
+{
+  "Env": {
+  },
+  "PreInclude": {
+    "1": "common_pre_dev.json:Config"
+  },
+  "PostInclude": {
+    "1": "custom-test.json:Config"
+  },
+  "Config": {
+    "MainAddress": "http://eisodos.offsite-solutions.local/",
+    "LangIDFile": "$_applicationDir/languages/langids.txt",
+    "UserLangIDFile": "$appDir/languages/user_langids.txt",
+    "CollectLangIDs": "T"
+  },
+  "Other": {
+    "TestValue": "$random"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "name": "offsite-solutions/eisodos",
+  "description": "Page generator engine",
+  "type": "library",
+  "authors": [
+    {
+      "name": "Offsite Solutions Ltd.",
+      "email": "info@offsite-solutions.com"
+    }
+  ],
+  "minimum-stability": "dev",
+  "require": {
+    "php": "~7.2.0 || ~7.3.0 || ~7.4.0",
+    "ext-mbstring": "*",
+    "psr/log": "^1.0",
+    "php-console/php-console": "^3.1",
+    "ext-json": "*",
+    "pear/mail": "*",
+    "pear/mail_mime": "*",
+    "ext-bcmath": "*"
+  },
+  "require-dev": {
+  },
+  "suggest": {
+  },
+  "autoload": {
+    "psr-0": {
+      "Eisodos\\": "src/"
+    }
+  }
+}
