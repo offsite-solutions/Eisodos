@@ -19,7 +19,6 @@ abstract class Singleton
 
     /**
      * Returns the *Singleton* instance of this class.
-     * @throws Exception
      * @inheritDoc
      */
     public static function getInstance()
@@ -53,13 +52,12 @@ abstract class Singleton
      */
     public function __wakeup()
     {
-        throw new Exception('Cannot unserialize a singleton.');
+        throw new \RuntimeException('Cannot unserialize a singleton.');
     }
 
     /**
      * after getInstance() it must be initialized
      * @var mixed $options_ Object's options
-     * @return Singleton
      */
     abstract protected function init($options_);
 

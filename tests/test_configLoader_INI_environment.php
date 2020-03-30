@@ -33,7 +33,7 @@ try {
 } catch (Exception $e) {
     if (!isset($c)) {
         die($e->getMessage());
-    } else {
-        $c::$logger->writeErrorLog($e);
     }
+
+    $c::$logger->writeErrorLog($e);
 }

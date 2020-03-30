@@ -25,7 +25,7 @@ try {
 } catch (Exception $e) {
     if (!isset(Eisodos::$logger)) {
         die($e->getMessage());
-    } else {
-        Eisodos::$logger->writeErrorLog($e);
     }
+
+    Eisodos::$logger->writeErrorLog($e);
 }

@@ -8,6 +8,7 @@ namespace Eisodos;
 use Eisodos\Abstracts\Singleton;
 use Exception;
 use PC;
+use RuntimeException;
 
 /**
  * Class ParameterHandler
@@ -48,20 +49,20 @@ final class ParameterHandler extends Singleton
     /**
      * Collects the input parameters into a log file
      */
-    private function _initParameterCollecting()
+    private function _initParameterCollecting(): void
     {
         if ($this->neq('COLLECTPARAMSTOFILE', '') and file_exists(
                 Eisodos::$templateEngine->replaceParamInString($this->getParam('COLLECTPARAMSTOFILE'))
             )) {
-            $file = fopen(Eisodos::$templateEngine->replaceParamInString($this->getParam('COLLECTPARAMSTOFILE')), 'r');
+            $file = fopen(Eisodos::$templateEngine->replaceParamInString($this->getParam('COLLECTPARAMSTOFILE')), 'rb');
             if (!($file === false)) {
                 while (!feof($file)) {
                     $line = rtrim(fgets($file));
-                    if (strlen($line) == 0) {
+                    if ($line === '') {
                         continue;
                     }
                     $l = explode('=', $line, 2);
-                    $this->_collectedParams[strtolower($l[0])] = (count($l) == 1 ? '' : trim($l[1]));
+                    $this->_collectedParams[strtolower($l[0])] = (count($l) === 1 ? '' : trim($l[1]));
                 }
                 fclose($file);
             } else {
@@ -73,13 +74,13 @@ final class ParameterHandler extends Singleton
     /**
      * Loads session variables into the parameter array and filters them by the rules defined in the .params file
      */
-    private function _loadSessionVariables()
+    private function _loadSessionVariables(): void
     {
         mt_srand((double)microtime() * 1000000);
         if (isset($_SESSION)) {
             if (!session_id()) {
-                if ($this->neq("COOKIE_DOMAIN", "")) {
-                    ini_set("session.cookie_domain", $this->getParam("COOKIE_DOMAIN"));
+                if ($this->neq('COOKIE_DOMAIN', '')) {
+                    ini_set('session.cookie_domain', $this->getParam('COOKIE_DOMAIN'));
                 }
                 session_name(Eisodos::$applicationName);
                 session_start();
@@ -88,8 +89,8 @@ final class ParameterHandler extends Singleton
             foreach ($_SESSION as $p => $v) {
                 $skipParameter = false;
                 foreach ($this->_skippedParams as $skipName => $skipValue) {
-                    if (($skipValue and strpos(strtolower($p), strtolower($skipName)) == 0)
-                        or (!$skipValue and strtolower($p) == strtolower($skipName))) {
+                    if (($skipValue and stripos($p, $skipName) === 0)
+                        or (!$skipValue and strtolower($p) === strtolower($skipName))) {
                         $skipParameter = true;
                         break;
                     }
@@ -121,12 +122,12 @@ final class ParameterHandler extends Singleton
 
         foreach ($parameterFilterLines as $line) {
             $line = trim($line);
-            if ($line and !preg_match("/^#/", $line)) {
-                $line .= ";;;;;";
-                $items = explode(";", $line);
-                if ($items[0] == "permanent") {
-                    $a = explode("=", $items[1]);
-                    if (Eisodos::$utils->safe_array_value($this->_cookies, $a[0], "") == ""
+            if ($line and !preg_match('/^#/', $line)) {
+                $line .= ';;;;;';
+                $items = explode(';', $line);
+                if ($items[0] === 'permanent') {
+                    $a = explode('=', $items[1]);
+                    if (Eisodos::$utils->safe_array_value($this->_cookies, $a[0], '') === ''
                         and count($a) > 1) {
                         $this->_cookies[$a[0]] = $a[1];
                     }
@@ -147,12 +148,21 @@ final class ParameterHandler extends Singleton
 
         // removing parameters from collected params which declared in .params
 
-        if ($this->neq("COLLECTPARAMSTOFILE", "")) {
+        if ($this->neq('COLLECTPARAMSTOFILE', '')) {
             foreach ($this->_collectedParams as $n => $v) {
                 foreach ($LParamFilters2 as $fn => $fv) // filterparam is a substring of inputparams and its marked with *
                 {
-                    if (($fn == $n) or
-                        ((strpos($fn, '*') !== false) and (strpos($n, Eisodos::$utils->replace_all($fn, '*', '', false, false)) == 0))) {
+                    if (($fn === $n) or
+                        ((strpos($fn, '*') !== false) and (strpos(
+                                    $n,
+                                    Eisodos::$utils->replace_all(
+                                        $fn,
+                                        '*',
+                                        '',
+                                        false,
+                                        false
+                                    )
+                                ) === 0))) {
                         unset($this->_collectedParams[$n]);
                         break;
                     }
@@ -160,8 +170,8 @@ final class ParameterHandler extends Singleton
             }
         }
 
-        $trimInputParams = $this->eq("TRIMINPUTPARAMS", "T", "T");
-        $trimTrailingPer = $this->eq("TRIMTRAILINGPER", "T", "T");
+        $trimInputParams = $this->eq('TRIMINPUTPARAMS', 'T', 'T');
+        $trimTrailingPer = $this->eq('TRIMTRAILINGPER', 'T', 'T');
 
         foreach ($parameters_ as $n => $v) {
             $doNotAddIt = false;
@@ -171,13 +181,13 @@ final class ParameterHandler extends Singleton
             $SIDCoded = false;
 
             // type checking
-            $parameterType = "";
-            $parameterTypeError = "";
-            $parameterTypeErrorLog = "";
+            $parameterType = '';
+            $parameterTypeError = '';
+            $parameterTypeErrorLog = '';
 
             if ($trimInputParams and !is_array($v)) {
                 $v = trim($v);
-                if ($trimTrailingPer and $v != "") {
+                if ($trimTrailingPer and $v !== '') {
                     $v = rtrim($v, '/');
                 }
             }
@@ -187,43 +197,43 @@ final class ParameterHandler extends Singleton
             }
 
             foreach ($LParamFilters2 as $fn => $fv) {
-                if (($fn == $n) or
+                if (($fn === $n) or
                     ((strpos($fn, '*') !== false)
-                        and (strpos($n, Eisodos::$utils->replace_all($fn, '*', '', false, false)) == 0))) {
+                        and (strpos($n, Eisodos::$utils->replace_all($fn, '*', '', false, false)) === 0))) {
                     switch ($fv[0]) {
-                        case "exclude":
+                        case 'exclude':
                             $doNotAddIt = true;
                             break;
-                        case "encoded":
+                        case 'encoded':
                             $decodeIt = true;
                             break;
-                        case "permanent":
-                        case "cookie":
+                        case 'permanent':
+                        case 'cookie':
                             $cookieIt = true;
                             break;
-                        case "session":
+                        case 'session':
                             $storeIt = true;
                             break;
-                        case "protected":
+                        case 'protected':
                             $storeIt = true;
                             $SIDCoded = true;
                             break;
-                        case "cookie_encoded":
+                        case 'cookie_encoded':
                             $cookieIt = true;
                             $decodeIt = true;
                             break;
-                        case "session_encoded":
+                        case 'session_encoded':
                             $storeIt = true;
                             $decodeIt = true;
                             break;
-                        case "protected_encoded":
+                        case 'protected_encoded':
                             $storeIt = true;
                             $decodeIt = true;
                             $SIDCoded = true;
                             break;
-                        case "input":
+                        case 'input':
                             break; // nothing to do, just type check
-                        case "skip":
+                        case 'skip':
                             $this->_skippedParams[Eisodos::$utils->replace_all($fn, '*', '', false, false)] = (strpos(
                                     $fn,
                                     '*'
@@ -238,7 +248,7 @@ final class ParameterHandler extends Singleton
             }
 
             if ($doNotAddIt) {
-                Eisodos::$render->pageDebugInfo("Invalid parameter: $n");
+                Eisodos::$render->pageDebugInfo('Invalid parameter: ' . $n);
                 continue;
             }
 
@@ -253,13 +263,13 @@ final class ParameterHandler extends Singleton
 
             try {
                 if ($SIDCoded
-                    and ($this->getParam($n, "") != $v)) {
-                    if (!(($this->udSDecode($parameters_["csid"]) == $this->getParam("SESSIONID"))
+                    and ($this->getParam($n, "") !== $v)) {
+                    if (!(($this->udSDecode($parameters_['csid']) === $this->getParam('SESSIONID'))
                         or
-                        (($this->neq("ALLOWADMIN", ""))
-                            and (strpos($this->getParam("ALLOWADMIN", "127.0.0.1"), $_SERVER["REMOTE_ADDR"]) !== false))
+                        (($this->neq('ALLOWADMIN', ''))
+                            and (strpos($this->getParam('ALLOWADMIN', '127.0.0.1'), $_SERVER['REMOTE_ADDR']) !== false))
                     )) {
-                        throw new Exception("Error SID Decoding parameter");
+                        throw new RuntimeException('Error SID Decoding parameter');
                     }
                 }
             } catch (Exception $e) {
@@ -267,28 +277,28 @@ final class ParameterHandler extends Singleton
                 continue;
             }
 
-            if ($parameterType != "") { // parameter tipus ellenorzese, dekodolas utan
+            if ($parameterType !== '') { // parameter tipus ellenorzese, dekodolas utan
                 $typeError = false;
-                if ($parameterType == "numeric") {
+                if ($parameterType === 'numeric') {
                     if (!Eisodos::$utils->isInteger($v, true)) {
                         $typeError = true;
                     }
-                } elseif ($parameterType == "text") {
+                } elseif ($parameterType === 'text') {
                     $typeError = false;
-                } elseif (preg_match($parameterType, $v) != 1) {
+                } elseif (preg_match($parameterType, $v) !== 1) {
                     $typeError = true;
                 } // regexp
 
                 if ($typeError) {
-                    if ($parameterTypeErrorLog != "") {
+                    if ($parameterTypeErrorLog !== '') {
                         Eisodos::$logger->writeErrorLog(
-                            new Exception("Invalid parameter value [" . $n . "]=[" . $v . "]")
+                            new Exception('Invalid parameter value [' . $n . ']=[' . $v . ']')
                         );
                     } else {
-                        PC::debug("Invalid parameter value [" . $n . "]=[" . $v . "]");
+                        PC::debug('Invalid parameter value [' . $n . ']=[' . $v . ']');
                     }
-                    if (strpos($parameterTypeError, '/') == 0 or strpos($parameterTypeError, 'http') == 0) {
-                        $this->setParam("Redirect", $parameterTypeError);
+                    if (strpos($parameterTypeError, '/') === 0 or strpos($parameterTypeError, 'http') === 0) {
+                        $this->setParam('Redirect', $parameterTypeError);
                     } else {
                         $v = $parameterTypeError;
                     }
@@ -298,29 +308,29 @@ final class ParameterHandler extends Singleton
             $this->setParam($n, $v, $storeIt, $cookieIt);
 
             if (!is_array($v)) {
-                if ($this->eq("DEBUGMISSINGPARAMS", "T") and (strlen($v) > 0) and !array_key_exists(
+                if ($this->eq('DEBUGMISSINGPARAMS', 'T') and ($v != '') and !array_key_exists(
                         $n,
                         $LParamFilters2
                     )) {
-                    PC::debug("Missing parameter: [" . strtoupper($n) . "] ");
+                    PC::debug('Missing parameter: [' . strtoupper($n) . '] ');
                 }
 
-                if ((strlen($v) > 0) and !array_key_exists($n, $LParamFilters2)) {
-                    $this->_collectedParams[$n] = "input;" . strtoupper($n) . ";" . (Eisodos::$utils->isInteger(
+                if (($v !== '') and !array_key_exists($n, $LParamFilters2)) {
+                    $this->_collectedParams[$n] = 'input;' . strtoupper($n) . ';' . (Eisodos::$utils->isInteger(
                             $v,
                             true
-                        ) ? "numeric;" : "text;") . ";";
+                        ) ? 'numeric;' : 'text;') . ';';
                 }
 
-                $row = $n . "=" . $v;
-                for ($b = 1; $b <= strlen($row); $b++) {
+                $row = $n . '=' . $v;
+                for ($b = 1, $bMax = strlen($row); $b <= $bMax; $b++) {
                     $result += $b / ord($row[$b - 1]);
                 }
             }
         }
 
-        if (($this->neq("DEFLANG", "")) and ($this->eq("Lang", ""))) {
-            $this->setParam("Lang", $this->getParam("DEFLANG"), true);
+        if (($this->neq('DEFLANG', '')) and ($this->eq('Lang', ''))) {
+            $this->setParam('Lang', $this->getParam('DEFLANG'), true);
         }
 
         $this->_collectedParams = array_change_key_case($this->_collectedParams, CASE_UPPER);
@@ -335,7 +345,7 @@ final class ParameterHandler extends Singleton
      */
     private function _swap(
         $text_
-    ) {
+    ): string {
         return $text_[1] . $text_[0];
     }
 
@@ -344,8 +354,9 @@ final class ParameterHandler extends Singleton
     /**
      * Parameter Handler initializer
      * @param array $parameterHandlerOptions_
+     * @return void
      */
-    public function init($parameterHandlerOptions_ = [])
+    public function init($parameterHandlerOptions_ = []):void
     {
         $this->_initParameterCollecting();
         $this->_enableParamCallback = $this->eq('ENABLEPARAMCALLBACK', 'T', 'F');
@@ -362,13 +373,13 @@ final class ParameterHandler extends Singleton
         $LInputParams = array_change_key_case(array_merge($_POST, $_GET), CASE_LOWER);
 
         Eisodos::$configLoader->initVersioning(
-            Eisodos::$utils->safe_array_value($LInputParams, "devversion", $this->getParam("DevVersion"))
+            Eisodos::$utils->safe_array_value($LInputParams, 'devversion', $this->getParam('DevVersion'))
         );
 
         $crc = $this->_loadInputParams($LInputParams);
 
         // Parameter filter can cause immediate redirect
-        if ($this->neq("Redirect", "")) {
+        if ($this->neq('Redirect', '')) {
             $this->finish();
             exit;
         }
@@ -379,30 +390,31 @@ final class ParameterHandler extends Singleton
         $this->setParam('RePost', 'F');
 
         // init LastPostID variable
-        if ($this->eq("LastPostID", "")) {
-            $this->setParam("LastPostID", "0", true);
+        if ($this->eq('LastPostID', '')) {
+            $this->setParam('LastPostID', '0', true);
         }
 
         // check REPOST
-        if ($this->neq("PostID", "")) {
-            if ((integer)$this->getParam("PostID") <= (integer)$this->getParam("LastPostID")) {
+        if ($this->neq('PostID', '')) {
+            if ((integer)$this->getParam('PostID') <= (integer)$this->getParam('LastPostID')) {
                 $this->setParam('RePost', 'T');
             } else {
-                $this->setParam("LastPostID", $this->getParam("PostID"), true);
+                $this->setParam('LastPostID', $this->getParam('PostID'), true);
             }
         }
 
         // increase LastPostID
-        $this->setParam('PostID', (string)((integer)$this->getParam("LastPostID") + 1));
+        $this->setParam('PostID', (string)((integer)$this->getParam('LastPostID') + 1));
 
-        if ($this->neq("Reload", "F")) {
-            if ((string)$crc == $this->getParam("CRC")) {
-                $this->setParam("Reload", "T");
+        if ($this->neq('Reload', 'F')) {
+            if ((string)$crc === $this->getParam('CRC')) {
+                $this->setParam('Reload', 'T');
             } else {
-                $this->setParam("Reload", "F");
-                $this->setParam("CRC", (string)$crc, true);
+                $this->setParam('Reload', 'F');
+                $this->setParam('CRC', (string)$crc, true);
             }
         }
+
     }
 
     /**
@@ -414,17 +426,17 @@ final class ParameterHandler extends Singleton
     public function udSCode(
         $textToCode_,
         $useMarks_ = false
-    ) {
+    ): string {
         $c = $textToCode_;
-        $d = "";
-        for ($a = 0; $a < strlen($c); $a++) {
+        $d = '';
+        for ($a = 0, $aMax = strlen($c); $a < $aMax; $a++) {
             $d .= $this->_swap(str_pad(dechex(ord($c[$a]) + $a + 1), 2, '0', STR_PAD_LEFT));
         }
-        $c = "";
-        for ($a = 1; $a <= floor(strlen($d) / 2); $a++) {
+        $c = '';
+        for ($a = 1, $aMax = floor(strlen($d) / 2); $a <= $aMax; $a++) {
             try {
-                if ((preg_match("/[G-Zg-z]/", chr(hexdec($d[$a * 2 - 2] . $d[$a * 2 - 1])))) or
-                    ($useMarks_ and (preg_match("/[!-\/]/", chr(hexdec($d[$a * 2 - 2] . $d[$a * 2 - 1])))))
+                if ((preg_match('/[G-Zg-z]/', chr(hexdec($d[$a * 2 - 2] . $d[$a * 2 - 1]))))
+                    or ($useMarks_ and (preg_match("/[!-\/]/", chr(hexdec($d[$a * 2 - 2] . $d[$a * 2 - 1])))))
                 ) {
                     $c .= chr(hexdec($d[$a * 2 - 2] . $d[$a * 2 - 1]));
                 } else {
@@ -446,23 +458,23 @@ final class ParameterHandler extends Singleton
      * @throws Exception
      */
     public function udSDecode(
-        $textToDecode_ = "",
+        $textToDecode_ = '',
         $useMarks_ = false
-    ) {
-        $d = "";
+    ): string {
+        $d = '';
         $c = $textToDecode_;
-        for ($a = 1; $a <= strlen($c); $a++) {
-            if (preg_match("/[G-Zg-z]/", $c[$a - 1]) or ($useMarks_ and preg_match("/[!-\/]/", $c[$a - 1]))) {
+        for ($a = 1, $aMax = strlen($c); $a <= $aMax; $a++) {
+            if (preg_match('/[G-Zg-z]/', $c[$a - 1]) or ($useMarks_ and preg_match("/[!-\/]/", $c[$a - 1]))) {
                 $d .= str_pad(dechex(ord($c[$a - 1])), 2, '0', STR_PAD_LEFT);
             } else {
                 $d .= $c[$a - 1];
             }
         }
         $c = "";
-        for ($a = 1; $a <= floor(strlen($d) / 2); $a++) {
+        for ($a = 1, $aMax = floor(strlen($d) / 2); $a <= $aMax; $a++) {
             $hex = $this->_swap($d[$a * 2 - 2] . $d[$a * 2 - 1]);
-            if (!preg_match("/[0-9a-fA-F]/", $hex)) {
-                throw new Exception("Error decoding parameter");
+            if (!preg_match('/[0-9a-fA-F]/', $hex)) {
+                throw new RuntimeException('Error decoding parameter');
             }
             $c .= chr(hexdec($hex) - $a);
         }
@@ -479,25 +491,34 @@ final class ParameterHandler extends Singleton
      * @param bool $trimValue_ Trim value before compare
      * @return bool
      */
-    public function eq($parameterName_, $value_, $defaultValue_ = '', $caseInsensitive_ = true, $trimValue_ = true)
-    {
+    public function eq(
+        $parameterName_,
+        $value_,
+        $defaultValue_ = '',
+        $caseInsensitive_ = true,
+        $trimValue_ = true
+    ): bool {
         if (strpos($value_, '^') === 0) {
-            $value_ = $this->getParam(substr($value_, 1));
+            $value_ = (string)$this->getParam(substr($value_, 1));
         }
+
         if (strpos($parameterName_, '^') === 0) {
-            $parameterName_ = $this->getParam(substr($parameterName_, 1));
+            $parameterName_ = (string)$this->getParam(substr($parameterName_, 1));
         }
-        if ($trimValue_ == true) {
+
+        if ($trimValue_ === true) {
             if ($caseInsensitive_) {
-                return (strtolower($value_) == strtolower(trim($this->getParam($parameterName_, $defaultValue_))));
-            } else {
-                return ($value_ == trim($this->getParam($parameterName_, $defaultValue_)));
+                return (strtolower($value_) === strtolower(trim($this->getParam($parameterName_, $defaultValue_))));
             }
-        } elseif ($caseInsensitive_) {
-            return (strtolower($value_) == strtolower($this->getParam($parameterName_, $defaultValue_)));
-        } else {
-            return ($value_ == $this->getParam($parameterName_, $defaultValue_));
+
+            return ((string)$value_ === trim($this->getParam($parameterName_, $defaultValue_)));
         }
+
+        if ($caseInsensitive_) {
+            return (strtolower($value_) === strtolower($this->getParam($parameterName_, $defaultValue_)));
+        }
+
+        return ((string)$value_ === $this->getParam($parameterName_, $defaultValue_));
     }
 
     /**
@@ -509,34 +530,39 @@ final class ParameterHandler extends Singleton
      * @param bool $trimValue_ Trim value
      * @return bool
      */
-    public function neq($parameterName_, $value_, $defaultValue_ = '', $caseInsensitive_ = true, $trimValue_ = true)
-    {
+    public function neq(
+        $parameterName_,
+        $value_,
+        $defaultValue_ = '',
+        $caseInsensitive_ = true,
+        $trimValue_ = true
+    ): bool {
         return !$this->eq($parameterName_, $value_, $defaultValue_, $caseInsensitive_, $trimValue_);
     }
 
     /**
      * Add parameter to the parameter's array
      * @param string $parameterName_ Parameter's name
-     * @param string $value_ Parameter's value
+     * @param string|array $value_ Parameter's value
      * @param bool $sessionStored_ If true the parameter will be stored in the session variables
      * @param bool $cookieStored_ If true the parameter will be stored as cookie
      */
-    public function setParam($parameterName_, $value_ = '', $sessionStored_ = false, $cookieStored_ = false)
+    public function setParam($parameterName_, $value_ = '', $sessionStored_ = false, $cookieStored_ = false): void
     {
         $parameterName_ = strtolower($parameterName_);
         if ($cookieStored_) {
             $sessionStored_ = false;
         }
-        if (!is_array($value_) and strlen($value_) > 0 and ($value_[0] == '^')) {
+        if (!is_array($value_) and ($value_ !== '') and ($value_[0] === '^')) {
             $this->_params[$parameterName_]['value'] = $this->getParam(substr($value_, 1, strlen($value_)));
         } else {
             $this->_params[$parameterName_]['value'] = $value_;
         }
         if (isset($this->_params[$parameterName_]['flag'])) {
-            if (($this->_params[$parameterName_]['flag'] == '') and ($sessionStored_)) {
+            if (($this->_params[$parameterName_]['flag'] === '') and ($sessionStored_)) {
                 $this->_params[$parameterName_]['flag'] = 's';
             }
-            if (($this->_params[$parameterName_]['flag'] == '') and ($cookieStored_)) {
+            if (($this->_params[$parameterName_]['flag'] === '') and ($cookieStored_)) {
                 $this->_params[$parameterName_]['flag'] = 'c';
             }
         } else {
@@ -554,83 +580,87 @@ final class ParameterHandler extends Singleton
      * Get parameter's value with some internal variables (mostly for backward compatibility)
      * @param string $parameterName_ Parameter's name - case insensitive
      * @param string $defaultValue_ in case of parameter is not exists or its value is empty, return with this
-     * @return string
+     * @return string|array
      */
     public function getParam($parameterName_, $defaultValue_ = '')
     {
-        $parameterName_ = strtolower($parameterName_);
-        switch ($parameterName_) {
-            case 'seq':
-                $this->_param_SEQ++;
+        try {
+            $parameterName_ = strtolower($parameterName_);
+            switch ($parameterName_) {
+                case 'seq':
+                    $this->_param_SEQ++;
 
-                return (string)$this->_param_SEQ;
-            case 'seq0':
-                $this->_param_SEQ = 0;
+                    return (string)$this->_param_SEQ;
+                case 'seq0':
+                    $this->_param_SEQ = 0;
 
-                return (string)$this->_param_SEQ;
-            case 'seql':
-                return (string)$this->_param_SEQ;
-            case 'seqbit':
-                $this->_param_SEQ++;
+                    return (string)$this->_param_SEQ;
+                case 'seql':
+                    return (string)$this->_param_SEQ;
+                case 'seqbit':
+                    $this->_param_SEQ++;
 
-                return (string)($this->_param_SEQ % 2);
-            case 'seqlbit':
-                return (string)($this->_param_SEQ % 2);
-            case 'seq2':
-                $this->_param_SEQ2++;
+                    return (string)($this->_param_SEQ % 2);
+                case 'seqlbit':
+                    return (string)($this->_param_SEQ % 2);
+                case 'seq2':
+                    $this->_param_SEQ2++;
 
-                return (string)$this->_param_SEQ2;
-            case 'seq20':
-                $this->_param_SEQ2 = 0;
+                    return (string)$this->_param_SEQ2;
+                case 'seq20':
+                    $this->_param_SEQ2 = 0;
 
-                return (string)$this->_param_SEQ2;
-            case 'seq2l':
-                return (string)$this->_param_SEQ2;
-            case 'seq2bit':
-                $this->_param_SEQ2++;
+                    return (string)$this->_param_SEQ2;
+                case 'seq2l':
+                    return (string)$this->_param_SEQ2;
+                case 'seq2bit':
+                    $this->_param_SEQ2++;
 
-                return (string)($this->_param_SEQ2 % 2);
-            case 'seq2lbit':
-                return (string)($this->_param_SEQ2 % 2);
-            case 'currdate':
-                return date('Y');
-            case 'lnbr':
-                return PHP_EOL;
-            case '_':
-                return '_';
-            case '_sessionid':
-                return session_id();
-            case 'https':
-                return (!empty($_SERVER['HTTPS']) and $_SERVER['HTTPS'] !== 'off' or $_SERVER['SERVER_PORT'] == 443) ? 'https' : 'http';
-            case 'random':
-                $lastrandom = '';
-                for ($a = 1; $a <= 8; $a++) {
-                    $lastrandom .= chr(ord('a') + mt_rand(0, 25));
-                }
-                $this->setParam('lastrandom', $lastrandom);
+                    return (string)($this->_param_SEQ2 % 2);
+                case 'seq2lbit':
+                    return (string)($this->_param_SEQ2 % 2);
+                case 'currdate':
+                    return date('Y');
+                case 'lnbr':
+                    return PHP_EOL;
+                case '_':
+                    return '_';
+                case '_sessionid':
+                    return session_id();
+                case 'https':
+                    return (!empty($_SERVER['HTTPS']) and $_SERVER['HTTPS'] !== 'off' or $_SERVER['SERVER_PORT'] == 443) ? 'https' : 'http';
+                case 'random':
+                    $lastrandom = '';
+                    for ($a = 1; $a <= 8; $a++) {
+                        $lastrandom .= chr(ord('a') + random_int(0, 25));
+                    }
+                    $this->setParam('lastrandom', $lastrandom);
 
-                return $lastrandom;
+                    return $lastrandom;
+            }
+            if (isset($this->_params[$parameterName_])) {
+                $v = $this->_params[$parameterName_]['value'];
+            } else {
+                $v = '';
+            }
+
+            return ($v === '' ? $defaultValue_ : $v);
+        } catch (Exception $e) {
+            return '';
         }
-        if (isset($this->_params[$parameterName_])) {
-            $v = $this->_params[$parameterName_]['value'];
-        } else {
-            $v = '';
-        }
-
-        return $v == '' ? $defaultValue_ : $v;
     }
 
     /**
      * Generates a concatenated string from the parameters array
      * @return string
      */
-    public function params2log()
+    public function params2log(): string
     {
-        $st = "";
+        $st = '';
         foreach ($this->_params as $key => $value) {
-            $st .= "     " .
-                $key . "=" . (strlen($value["value"]) > 255 ? substr($value["value"], 0, 255) . "..."
-                    : $value["value"]) .
+            $st .= '     ' .
+                $key . '=' . (strlen($value['value']) > 255 ? substr($value['value'], 0, 255) . '...'
+                    : $value['value']) .
                 "\n";
         }
 
@@ -642,24 +672,24 @@ final class ParameterHandler extends Singleton
      * @param string $pattern_ Regular expression pattern
      * @return array
      */
-    public function getParamNames($pattern_)
+    public function getParamNames($pattern_): array
     {
         return array_keys(
             array_intersect_key($this->_params, array_flip(preg_grep($pattern_, array_keys($this->_params))))
         );
     }
 
-    public function clean()
+    public function clean(): void
     {
         foreach ($this->_params as $key => $v) {
-            if ($v["flag"] == "s") { // cleanup session variables
-                $this->_params[$key]["value"] = "";
-                $this->_params[$key]["flag"] = "";
+            if ($v['flag'] === 's') { // cleanup session variables
+                $this->_params[$key]['value'] = '';
+                $this->_params[$key]['flag'] = '';
             } // cleanup cookies except permanent and raw cookies
-            elseif ($v["flag"] == "c"
-                and Eisodos::$utils->safe_array_value($this->_cookies, $key, "") == ""
-                and !in_array(strtolower($key), explode(",", strtolower($this->getParam("RAWCOOKIES", ""))))) {
-                $this->_params[$key]["value"] = "";
+            elseif ($v['flag'] === 'c'
+                and Eisodos::$utils->safe_array_value($this->_cookies, $key, '') === ''
+                and !in_array(strtolower($key), explode(',', strtolower($this->getParam('RAWCOOKIES', ''))), true)) {
+                $this->_params[$key]['value'] = '';
             }
         }
     }
@@ -667,7 +697,7 @@ final class ParameterHandler extends Singleton
     /**
      *
      */
-    private function _saveSessionVariables()
+    private function _saveSessionVariables(): void
     {
         // ha valami direktbe toltott a session tombbe, akkor azt felvesszuk az LParams tombbe
         // pl. facebook login felveszi a fb_0000_state valtozot ide
@@ -678,21 +708,23 @@ final class ParameterHandler extends Singleton
         }
         $_SESSION = array();
         foreach ($this->_params as $key => $v) {
-            if ($v['flag'] == 's') {
+            if ($v['flag'] === 's') {
                 $_SESSION[$key] = $v['value'];
-            } elseif ($v['flag'] == 'c') {
-                if (Eisodos::$utils->safe_array_value($this->_cookies, $key, '') != '') {
+            } elseif ($v['flag'] === 'c') {
+                if (Eisodos::$utils->safe_array_value($this->_cookies, $key, '') !== '') {
                     if (in_array(
                         strtolower($key),
-                        explode(",", strtolower(Eisodos::$parameterHandler->getParam('RAWCOOKIES', '')))
+                        explode(',', strtolower(Eisodos::$parameterHandler->getParam('RAWCOOKIES', ''))),
+                        true
                     )) {
-                        setcookie($key, $v["value"], time() + 60 * 60 * 24 * $this->_cookies[$key]);
+                        setcookie($key, $v['value'], time() + 60 * 60 * 24 * $this->_cookies[$key]);
                     } else {
-                        setrawcookie($key, $v["value"], time() + 60 * 60 * 24 * $this->_cookies[$key]);
+                        setrawcookie($key, $v['value'], time() + 60 * 60 * 24 * $this->_cookies[$key]);
                     }
                 } elseif (in_array(
                     strtolower($key),
-                    explode(",", strtolower(Eisodos::$parameterHandler->getParam('RAWCOOKIES', '')))
+                    explode(',', strtolower(Eisodos::$parameterHandler->getParam('RAWCOOKIES', ''))),
+                    true
                 )) {
                     setrawcookie($key, $v['value']);
                 } else {
@@ -702,17 +734,17 @@ final class ParameterHandler extends Singleton
         }
     }
 
-    public function finish($saveSessionVariables_ = true)
+    public function finish($saveSessionVariables_ = true): void
     {
         if (Eisodos::$parameterHandler->neq('Logout', 'T')
             and $saveSessionVariables_) {
             $this->_saveSessionVariables();
         }
 
-        if (Eisodos::$parameterHandler->neq("COLLECTPARAMSTOFILE", "")
-            and Eisodos::$parameterHandler->neq("EditorMode", "T")
+        if (Eisodos::$parameterHandler->neq('COLLECTPARAMSTOFILE', '')
+            and Eisodos::$parameterHandler->neq('EditorMode', 'T')
             and $this->_collectedParamsFileError === false) {
-            $file = fopen(Eisodos::$templateEngine->replaceParamInString($this->getParam("COLLECTPARAMSTOFILE")), "w");
+            $file = fopen(Eisodos::$templateEngine->replaceParamInString($this->getParam('COLLECTPARAMSTOFILE')), 'wb');
             if (flock($file, LOCK_EX | LOCK_NB)) {
                 ksort($this->_collectedParams);
                 $mx = 0;
@@ -722,11 +754,11 @@ final class ParameterHandler extends Singleton
                     }
                 }
                 foreach ($this->_collectedParams as $key => $value) {
-                    fwrite($file, str_pad($key . "=", $mx + 1) . $value . "\n");
+                    fwrite($file, str_pad($key . '=', $mx + 1) . $value . "\n");
                 }
                 flock($file, LOCK_UN);
             } else {
-                PC::debug("Parameter file was blocked for writing!");
+                PC::debug('Parameter file was blocked for writing!');
             }
             fclose($file);
         }

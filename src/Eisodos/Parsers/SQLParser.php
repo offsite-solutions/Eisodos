@@ -22,7 +22,7 @@ abstract class SQLParser implements ParserInterface
     /**
      * @inheritDoc
      */
-    public function openTag()
+    public function openTag(): string
     {
         return '<%SQL%';
     }
@@ -30,7 +30,7 @@ abstract class SQLParser implements ParserInterface
     /**
      * @inheritDoc
      */
-    public function closeTag()
+    public function closeTag(): string
     {
         return '%SQL%>';
     }
@@ -77,7 +77,7 @@ abstract class SQLParser implements ParserInterface
      * @param $structureParameters_
      * @return string
      */
-    private function _runSQL($structureParameters_)
+    private function _runSQL($structureParameters_): string
     {
         $jsonKeys = array();
 
@@ -110,7 +110,7 @@ abstract class SQLParser implements ParserInterface
                 $tr = 0;
                 $rowFrom = (integer)$structureParameters_["ROWFROM"];
 
-                if (!count($resultSet['rows']) < $rowFrom) {
+                if (!(count($resultSet['rows']) < $rowFrom)) {
                     $result = Eisodos::$templateEngine->getTemplate($structureParameters_["HEADNULL"], array(), false) .
                         Eisodos::$templateEngine->getTemplate($structureParameters_["ROWNULL"], array(), false) .
                         Eisodos::$templateEngine->getTemplate($structureParameters_["FOOTNULL"], array(), false);
@@ -297,13 +297,13 @@ abstract class SQLParser implements ParserInterface
     /**
      * @inheritDoc
      */
-    public function parse($text_, $blockPosition = false)
+    public function parse($text_, $blockPosition = false): string
     {
         $LSQL = array();
 
         $orig = substr($text_, $blockPosition);
         $orig = substr($orig, 0, strpos($orig, '%SQL%>') + 5);
-        $sql = substr($orig, 6, strlen($orig) - 12);
+        $sql = substr($orig, 6, -6);
 
         $this->_getSQLParam($sql, $LSQL, 'DB', 'db1');
         $this->_getSQLParam($sql, $LSQL, 'CONVERTLATIN2UTF8');
@@ -348,11 +348,17 @@ abstract class SQLParser implements ParserInterface
 
             return ($result);
         } catch (Exception $e) {
-            return Eisodos::$utils->replace_all($text_, $orig, '<!-- Error running query: ' . $e->getMessage() . ' -->', false, false);
+            return Eisodos::$utils->replace_all(
+                $text_,
+                $orig,
+                '<!-- Error running query: ' . $e->getMessage() . ' -->',
+                false,
+                false
+            );
         }
     }
 
-    public function enabled()
+    public function enabled(): bool
     {
         return true;
     }

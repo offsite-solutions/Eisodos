@@ -45,23 +45,25 @@ final class Logger extends Singleton implements LoggerInterface
      * @param string $debugInformation_
      * @return string
      */
-    private function _generateFileLog($exception_, $debugInformation_ = '')
+    private function _generateFileLog($exception_, $debugInformation_ = ''): string
     {
         $st = "\n";
-        $st .= "---------- " . Eisodos::$applicationName . " ----------\n";
-        $st .= date("Y.m.d. H:i:s") . "\n";
+        $st .= '---------- ' . Eisodos::$applicationName . " ----------\n";
+        $st .= date('Y.m.d. H:i:s') . "\n";
         if ($exception_) {
             $st .= $exception_->getMessage() . "\n";
-            $st .= $exception_->getFile() . " at line " . $exception_->getLine() . "\n";
+            $st .= $exception_->getFile() . ' at line ' . $exception_->getLine() . "\n";
             $st .= $exception_->getTraceAsString() . "\n";
         }
         $st .= "     ----- Extended Error -----\n";
-        $st .= Eisodos::$utils->safe_array_value($_POST, "__EISODOS_extendedError") . "\n";
+        $st .= Eisodos::$utils->safe_array_value($_POST, '__EISODOS_extendedError') . "\n";
         $st .= "     ----- URL -----\n";
-        $st .= $_SERVER["REQUEST_URI"] . "\n";
+        if (array_key_exists('REQUEST_URI', $_SERVER)) {
+            $st .= $_SERVER['REQUEST_URI'] . "\n";
+        }
         $st .= "     ----- Parameters -----\n";
         $st .= Eisodos::$parameterHandler->params2log();
-        if ($debugInformation_ != "") {
+        if ($debugInformation_ !== '') {
             $st .= "     ----- Extended info -----\n";
             $st .= $debugInformation_;
         }
@@ -78,7 +80,7 @@ final class Logger extends Singleton implements LoggerInterface
     public function init($debugLevel_)
     {
         $this->debugLevel = $debugLevel_;
-        $this->_cliMode = (php_sapi_name() == "cli");
+        $this->_cliMode = (PHP_SAPI === 'cli');
     }
 
     /**
@@ -94,11 +96,10 @@ final class Logger extends Singleton implements LoggerInterface
     {
         try {
             if (strpos(Eisodos::$parameterHandler->getParam('ERROROUTPUT'), '@') !== false) {
-                $erroroutput = Eisodos::$parameterHandler->getParam('ERROROUTPUT') . ',';
-                $error_function = substr($erroroutput, strpos($erroroutput, '@') + 1);
+                $errorOutput = Eisodos::$parameterHandler->getParam('ERROROUTPUT') . ',';
+                $error_function = substr($errorOutput, strpos($errorOutput, '@') + 1);
                 $error_function = substr($error_function, 0, strpos($error_function, ',') - 1);
-                call_user_func(
-                    $error_function,
+                $error_function(
                     $this,
                     array(
                         'Message' => $exception_->getMessage() . "\n" . Eisodos::$utils->safe_array_value(
@@ -126,7 +127,7 @@ final class Logger extends Singleton implements LoggerInterface
             if (strpos(Eisodos::$parameterHandler->getParam('ERROROUTPUT'), 'File') !== false) {
                 $logfile = fopen(
                     Eisodos::$templateEngine->replaceParamInString(Eisodos::$parameterHandler->getParam('ERRORLOG')),
-                    'a'
+                    'ab'
                 ) or die("can't open log file");
                 fwrite($logfile, $errorString);
                 fclose($logfile);
@@ -176,17 +177,35 @@ final class Logger extends Singleton implements LoggerInterface
         }
     }
 
+    private function traceStep($text_, &$traceStep_)
+    {
+        switch ($text_) {
+            case 'BEGIN':
+            {
+                return 2 * $traceStep_++;
+            }
+            case 'END':
+            {
+                return 2 * --$traceStep_;
+            }
+            default:
+            {
+                return 2 * $traceStep_;
+            }
+        }
+    }
+
     /**
      * Adds debug message to PhpConsole or in CLI Mode to the standard output
      * @param string $text_ Message
      * @param string $debugLevel_ Debug level 'critical','error','info','warning','debug','trace','emergency','alert','notice'
      * @param object|null $sender_ Sender object
      */
-    public function log($text_, $debugLevel_ = 'debug', $sender_ = null)
+    public function log($text_, $debugLevel_ = 'debug', $sender_ = null): void
     {
         if ($this->debugEnabled === null) {
             $d = explode(',', $this->debugLevel);
-            $this->debugEnabled = (in_array('trace', $d) or in_array($debugLevel_, $d));
+            $this->debugEnabled = (in_array('trace', $d, true) or in_array($debugLevel_, $d, true));
         }
 
         if ($this->debugEnabled) {
@@ -197,7 +216,11 @@ final class Logger extends Singleton implements LoggerInterface
                 $className = Eisodos::$utils->safe_array_value($dbt[2], 'class');
             } else {
                 $functionName = '';
-                $className = get_class($sender_);
+                if ($sender_ === null) {
+                    $className = '';
+                } else {
+                    $className = get_class($sender_);
+                }
             }
 
             $now = DateTime::createFromFormat('U.u', number_format(microtime(true), 6, '.', ''));
@@ -205,12 +228,12 @@ final class Logger extends Singleton implements LoggerInterface
             $debugText = str_pad(
                     '[' . $now->format('Y-m-d H:i:s.u') . '] [' . mb_strtoupper($debugLevel_) . '] ' .
                     '[' . $className . ']' .
-                    ($functionName == '' ? '' : ' [' . $functionName . ']')
+                    ($functionName === '' ? '' : ' [' . $functionName . ']')
                     ,
                     100
                 ) . '|' . str_repeat(
                     ' ',
-                    ($text_ == 'BEGIN' ? (2 * $this->traceStep++) : ($text_ == 'END' ? (2 * --$this->traceStep) : 2 * $this->traceStep))
+                    $this->traceStep($text_, $this->traceStep)
                 ) . $text_;
 
             if ($this->_cliMode) {
@@ -227,9 +250,9 @@ final class Logger extends Singleton implements LoggerInterface
      * @param string $text_ Message to be displayed in the log message
      * @param object $sender_ Sender object. When specified debug will display the name of the sender object. Defaults to `null`.
      */
-    public function critical($text_, $sender_ = null)
+    public function critical($text_, $sender_ = null): void
     {
-        self::log($text_, 'critical', $sender_);
+        $this->log($text_, 'critical', $sender_);
     }
 
     /**
@@ -238,9 +261,9 @@ final class Logger extends Singleton implements LoggerInterface
      * @param string $text_ Message to be displayed in the log message
      * @param object|null $sender_ Sender object. When specified debug will display the name of the sender object. Defaults to `null`.
      */
-    public function error($text_, $sender_ = null)
+    public function error($text_, $sender_ = null): void
     {
-        self::log($text_, 'error', $sender_);
+        $this->log($text_, 'error', $sender_);
     }
 
     /**
@@ -249,9 +272,9 @@ final class Logger extends Singleton implements LoggerInterface
      * @param string $text_ Message to be displayed in the log message
      * @param object|null $sender_ Sender object. When specified debug will display the name of the sender object. Defaults to `null`.
      */
-    public function info($text_, $sender_ = null)
+    public function info($text_, $sender_ = null): void
     {
-        self::log($text_, 'info', $sender_);
+        $this->log($text_, 'info', $sender_);
     }
 
     /**
@@ -260,9 +283,9 @@ final class Logger extends Singleton implements LoggerInterface
      * @param string $text_ Message to be displayed in the log message
      * @param object|null $sender_ Sender object. When specified debug will display the name of the sender object. Defaults to `null`.
      */
-    public function warning($text_, $sender_ = null)
+    public function warning($text_, $sender_ = null): void
     {
-        self::log($text_, 'warning', $sender_);
+        $this->log($text_, 'warning', $sender_);
     }
 
     /**
@@ -271,9 +294,9 @@ final class Logger extends Singleton implements LoggerInterface
      * @param string $text_ Message to be displayed in the log message
      * @param object|null $sender_ Sender object. When specified debug will display the name of the sender object. Defaults to `null`.
      */
-    public function debug($text_, $sender_ = null)
+    public function debug($text_, $sender_ = null): void
     {
-        self::log($text_, 'debug', $sender_);
+        $this->log($text_, 'debug', $sender_);
     }
 
     /**
@@ -282,9 +305,9 @@ final class Logger extends Singleton implements LoggerInterface
      * @param string $text_ Message to be displayed in the log message
      * @param object|null $sender_ Sender object. When specified debug will display the name of the sender object. Defaults to `null`.
      */
-    public function trace($text_, $sender_ = null)
+    public function trace($text_, $sender_ = null): void
     {
-        self::log($text_, 'trace', $sender_);
+        $this->log($text_, 'trace', $sender_);
     }
 
     /**
@@ -293,9 +316,9 @@ final class Logger extends Singleton implements LoggerInterface
      * @param string $text_ Message to be displayed in the log message
      * @param object|null $sender_ Sender object. When specified debug will display the name of the sender object. Defaults to `null`.
      */
-    public function alert($text_, $sender_ = null)
+    public function alert($text_, $sender_ = null): void
     {
-        self::log($text_, 'alert', $sender_);
+        $this->log($text_, 'alert', $sender_);
     }
 
     /**
@@ -304,9 +327,9 @@ final class Logger extends Singleton implements LoggerInterface
      * @param string $text_ Message to be displayed in the log message
      * @param object|null $sender_ Sender object. When specified debug will display the name of the sender object. Defaults to `null`.
      */
-    public function emergency($text_, $sender_ = null)
+    public function emergency($text_, $sender_ = null): void
     {
-        self::log($text_, 'emergency', $sender_);
+        $this->log($text_, 'emergency', $sender_);
     }
 
     /**
@@ -315,9 +338,9 @@ final class Logger extends Singleton implements LoggerInterface
      * @param string $text_ Message to be displayed in the log message
      * @param object|null $sender_ Sender object. When specified debug will display the name of the sender object. Defaults to `null`.
      */
-    public function notice($text_, $sender_ = null)
+    public function notice($text_, $sender_ = null): void
     {
-        self::log($text_, 'notice', $sender_);
+        $this->log($text_, 'notice', $sender_);
     }
 
 }

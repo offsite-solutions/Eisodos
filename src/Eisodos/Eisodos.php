@@ -73,7 +73,7 @@ class Eisodos extends Singleton
      *     ] Application options - mandatory
      * @return Eisodos
      */
-    public function init($applicationOptions_)
+    public function init($applicationOptions_): Eisodos
     {
         try {
             self::$utils = Utils::getInstance();

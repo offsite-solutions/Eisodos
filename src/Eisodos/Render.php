@@ -25,7 +25,7 @@ final class Render extends Singleton
     /**
      * @var string $_pageDebugInfo Debug messages included into the page
      */
-    private $_pageDebugInfo = "";
+    private $_pageDebugInfo = '';
 
     // Public properties
 
@@ -43,13 +43,13 @@ final class Render extends Singleton
      * @param $page_
      * @return string
      */
-    private function _changeEncode($page_)
+    private function _changeEncode($page_): string
     {
         $result = $page_;
         $v = false;
-        $k = strpos($page_, "{#");
+        $k = strpos($page_, '{#');
         if ($k !== false) {
-            $v = strpos($page_, "#}");
+            $v = strpos($page_, '#}');
         }
         if ($v !== false and $v > $k) {
             $result = substr($page_, 0, $k) .
@@ -63,45 +63,51 @@ final class Render extends Singleton
     /**
      *
      */
-    private function _makeTitle()
+    private function _makeTitle(): void
     {
         function everything_in_tags($string, $tagname)
         {
             $pattern = "#<\s*?$tagname\b[^>]*>(.*?)</$tagname\b[^>]*>#s";
             if (preg_match($pattern, $string, $matches)) {
                 return $matches[1];
-            } else {
-                return "";
             }
+
+            return '';
         }
 
-        if (Eisodos::$parameterHandler->neq("TITLESTRING", "") and Eisodos::$parameterHandler->neq("EditorMode", "T")) {
-            $title = "";
-            if (Eisodos::$parameterHandler->neq("TITLEREPLACETAG", "")) {
-                $title = everything_in_tags($this->Response, Eisodos::$parameterHandler->getParam("TITLEREPLACETAG"));
+        if (Eisodos::$parameterHandler->neq('TITLESTRING', '') and Eisodos::$parameterHandler->neq('EditorMode', 'T')) {
+            $title = '';
+            if (Eisodos::$parameterHandler->neq('TITLEREPLACETAG', '')) {
+                $title = everything_in_tags($this->Response, Eisodos::$parameterHandler->getParam('TITLEREPLACETAG'));
             } else {
-                $a = strpos(Eisodos::$parameterHandler->getParam("TITLEREPLACE"), $this->Response);
+                $a = strpos(Eisodos::$parameterHandler->getParam('TITLEREPLACE'), $this->Response);
                 if ($a !== false) {
-                    $a += strlen(Eisodos::$parameterHandler->getParam("TITLEREPLACE"));
+                    $a += strlen(Eisodos::$parameterHandler->getParam('TITLEREPLACE'));
                     $b = strpos(
-                        Eisodos::$utils->replace_all(Eisodos::$parameterHandler->getParam("TITLEREPLACE"), "<", "</", false, false),
+                        Eisodos::$utils->replace_all(
+                            Eisodos::$parameterHandler->getParam('TITLEREPLACE'),
+                            '<',
+                            '</',
+                            false,
+                            false
+                        ),
                         $this->Response
                     );
                     $title = substr($this->Response, $a, $b - $a);
-                    if (Eisodos::$parameterHandler->eq("TITLECUT", "T")) {
-                        if (strpos("<", $title) !== false) {
-                            $title = substr($title, 0, strpos("<", $title) - 1);
+                    if (Eisodos::$parameterHandler->eq('TITLECUT', 'T')) {
+                        if (strpos('<', $title) !== false) {
+                            $title = substr($title, 0, strpos('<', $title) - 1);
                         }
                     } else {
                         $b = 0;
-                        $title2 = "";
-                        for ($a = 1; $a <= strlen($title); $a++) {
-                            if ($title[$a - 1] == "<") {
+                        $title2 = '';
+                        for ($a = 1, $aMax = strlen($title); $a <= $aMax; $a++) {
+                            if ($title[$a - 1] === '<') {
                                 $b = 1;
-                            } elseif ($title[$a - 1] == ">") {
+                            } elseif ($title[$a - 1] === '>') {
                                 $b = 0;
-                                $title2 .= " ";
-                            } elseif ($b == 0) {
+                                $title2 .= ' ';
+                            } elseif ($b === 0) {
                                 $title2 .= $title[$a - 1];
                             }
                         }
@@ -110,13 +116,13 @@ final class Render extends Singleton
                 }
             }
 
-            if ($title != "") {
-                if (Eisodos::$parameterHandler->eq("TITLECONCAT", "T")) {
-                    $title .= " - " . Eisodos::$parameterHandler->getParam(
-                            "TITLEEMPTY" . Eisodos::$parameterHandler->getParam(
-                                "Lang",
+            if ($title !== '') {
+                if (Eisodos::$parameterHandler->eq('TITLECONCAT', 'T')) {
+                    $title .= ' - ' . Eisodos::$parameterHandler->getParam(
+                            'TITLEEMPTY' . Eisodos::$parameterHandler->getParam(
+                                'Lang',
                                 Eisodos::$parameterHandler->getParam(
-                                    "DEFLANG"
+                                    'DEFLANG'
                                 )
                             )
                         );
@@ -124,16 +130,16 @@ final class Render extends Singleton
                 $title = trim($title);
                 $this->Response = Eisodos::$utils->replace_all(
                     $this->Response,
-                    Eisodos::$parameterHandler->getParam("TITLESTRING", "%TITLE%"),
+                    Eisodos::$parameterHandler->getParam('TITLESTRING', '%TITLE%'),
                     $title,
                     true,
                     false
                 );
-                if (Eisodos::$parameterHandler->neq("TITLECAPITALSTRING", "")) {
+                if (Eisodos::$parameterHandler->neq('TITLECAPITALSTRING', '')) {
                     $title = strtoupper($title);
                     $this->Response = Eisodos::$utils->replace_all(
                         $this->Response,
-                        Eisodos::$parameterHandler->getParam("TITLECAPITALSTRING", "%TITLECAP%"),
+                        Eisodos::$parameterHandler->getParam('TITLECAPITALSTRING', '%TITLECAP%'),
                         $title,
                         true,
                         false
@@ -142,12 +148,12 @@ final class Render extends Singleton
             } else {
                 $this->Response = Eisodos::$utils->replace_all(
                     $this->Response,
-                    Eisodos::$parameterHandler->getParam("TITLESTRING", "%TITLE%"),
+                    Eisodos::$parameterHandler->getParam('TITLESTRING', '%TITLE%'),
                     Eisodos::$parameterHandler->getParam(
-                        "TITLEEMPTY" . Eisodos::$parameterHandler->getParam(
-                            "Lang",
+                        'TITLEEMPTY' . Eisodos::$parameterHandler->getParam(
+                            'Lang',
                             Eisodos::$parameterHandler->getParam(
-                                "DEFLANG"
+                                'DEFLANG'
                             )
                         )
                     ),
@@ -156,12 +162,12 @@ final class Render extends Singleton
                 );
                 $this->Response = Eisodos::$utils->replace_all(
                     $this->Response,
-                    Eisodos::$parameterHandler->getParam("TITLECAPITALSTRING", "%TITLECAP%"),
+                    Eisodos::$parameterHandler->getParam('TITLECAPITALSTRING', '%TITLECAP%'),
                     Eisodos::$parameterHandler->getParam(
-                        "TITLEEMPTY" . Eisodos::$parameterHandler->getParam(
-                            "Lang",
+                        'TITLEEMPTY' . Eisodos::$parameterHandler->getParam(
+                            'Lang',
                             Eisodos::$parameterHandler->getParam(
-                                "DEFLANG"
+                                'DEFLANG'
                             )
                         )
                     ),
@@ -171,30 +177,36 @@ final class Render extends Singleton
             }
         }
 
-        $title = "";
-        if (Eisodos::$parameterHandler->neq("DESCRIPTIONSTRING", "") and Eisodos::$parameterHandler->neq(
-                "EditorMode",
-                "T"
+        if (Eisodos::$parameterHandler->neq('DESCRIPTIONSTRING', '') and Eisodos::$parameterHandler->neq(
+                'EditorMode',
+                'T'
             )) {
-            $a = strpos(Eisodos::$parameterHandler->getParam("DESCRIPTIONREPLACE"), $this->Response);
+            $a = strpos(Eisodos::$parameterHandler->getParam('DESCRIPTIONREPLACE'), $this->Response);
             if ($a !== false) {
-                $a += strlen(Eisodos::$parameterHandler->getParam("DESCRIPTIONREPLACE"));
+                $a += strlen(Eisodos::$parameterHandler->getParam('DESCRIPTIONREPLACE'));
                 $b = strpos(
-                    Eisodos::$utils->replace_all(Eisodos::$parameterHandler->getParam("DESCRIPTIONREPLACE"), "<", "</", false, false),
+                    Eisodos::$utils->replace_all(
+                        Eisodos::$parameterHandler->getParam('DESCRIPTIONREPLACE'),
+                        '<',
+                        '</',
+                        false,
+                        false
+                    ),
                     $this->Response
                 );
+                $title = '';
                 if ($b > 0 and $b > $a) {
                     $title = substr($this->Response, $a, $b - $a);
                     {
                         $b = 0;
-                        $title2 = "";
-                        for ($a = 1; $a <= strlen($title); $a++) {
-                            if ($title[$a - 1] == "<") {
+                        $title2 = '';
+                        for ($a = 1, $aMax = strlen($title); $a <= $aMax; $a++) {
+                            if ($title[$a - 1] === '<') {
                                 $b = 1;
-                            } elseif ($title[$a - 1] == ">") {
+                            } elseif ($title[$a - 1] === '>') {
                                 $b = 0;
-                                $title2 .= " ";
-                            } elseif ($b == 0) {
+                                $title2 .= ' ';
+                            } elseif ($b === 0) {
                                 $title2 .= $title[$a - 1];
                             }
                         }
@@ -204,7 +216,7 @@ final class Render extends Singleton
                 $title = trim($title);
                 $this->Response = Eisodos::$utils->replace_all(
                     $this->Response,
-                    Eisodos::$parameterHandler->getParam("DESCRIPTIONSTRING", "%DESC%"),
+                    Eisodos::$parameterHandler->getParam('DESCRIPTIONSTRING', '%DESC%'),
                     $title,
                     true,
                     false
@@ -212,8 +224,8 @@ final class Render extends Singleton
             } else {
                 $this->Response = Eisodos::$utils->replace_all(
                     $this->Response,
-                    Eisodos::$parameterHandler->getParam("DESCRIPTIONSTRING", "%DESC%"),
-                    "",
+                    Eisodos::$parameterHandler->getParam('DESCRIPTIONSTRING', '%DESC%'),
+                    '',
                     true,
                     false
                 );
@@ -228,10 +240,10 @@ final class Render extends Singleton
      * @param bool $rawResponse_ If true the response will not be modified
      * @return void
      */
-    private function _generatePage($rawResponse_ = false)
+    private function _generatePage($rawResponse_ = false): void
     {
-        if (Eisodos::$parameterHandler->neq("Redirect", "")
-            or Eisodos::$parameterHandler->neq("PageExpires", "")) {
+        if (Eisodos::$parameterHandler->neq('Redirect', '')
+            or Eisodos::$parameterHandler->neq('PageExpires', '')) {
             ob_end_clean();
 
             header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
@@ -240,14 +252,14 @@ final class Render extends Singleton
             header('Cache-Control: post-check=0, pre-check=0', false);
             header('Pragma: no-cache');
 
-            if (Eisodos::$parameterHandler->neq("Redirect", "")) {
-                header('Location: ' . Eisodos::$parameterHandler->getParam("Redirect"));
+            if (Eisodos::$parameterHandler->neq('Redirect', '')) {
+                header('Location: ' . Eisodos::$parameterHandler->getParam('Redirect'));
 
                 return;
             }
-        } elseif (Eisodos::$parameterHandler->neq("PermaRedirect", "")) {
+        } elseif (Eisodos::$parameterHandler->neq('PermaRedirect', '')) {
             header('HTTP/1.1 301 Moved Permanently');
-            header('Location: ' . Eisodos::$parameterHandler->getParam("PermaRedirect"));
+            header('Location: ' . Eisodos::$parameterHandler->getParam('PermaRedirect'));
 
             return;
         }
@@ -281,28 +293,28 @@ final class Render extends Singleton
             $a_string = $a_array[1] . $a_array[0];
             $b_string = $b_array[1] . $b_array[0];
 
-            if (strlen($this->_pageDebugInfo) > 0) {
-                $this->Response .= "<!-- " . $this->_pageDebugInfo . "-->\n";
+            if ($this->_pageDebugInfo !== '') {
+                $this->Response .= '<!-- ' . $this->_pageDebugInfo . '-->' . "\n";
             }
 
-            if (Eisodos::$parameterHandler->eq("INCLUDESTATISTIC", "T") and // ajax-nal ne rakja bele
+            if (Eisodos::$parameterHandler->eq('INCLUDESTATISTIC', 'T') and // ajax-nal ne rakja bele
                 !(!empty($_SERVER['HTTP_X_REQUESTED_WITH']) and
-                    strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest')) {
+                    strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')) {
                 $unit = array('B', 'KB', 'MB', 'GB', 'TB', 'PB');
                 $mu = memory_get_usage(true);
                 $pmu = memory_get_peak_usage(true);
                 $this->Response .= "\n<!-- Memory usage: " . (@round(
-                            $mu / pow(1024, ($i = (integer)floor(log($mu, 1024)))),
+                            $mu / (1024 ** ($i = (integer)floor(log($mu, 1024)))),
                             2
-                        ) . ' ' . $unit[$i]) . " (" . (@round(
-                            $pmu / pow(1024, ($i = (integer)floor(log($pmu, 1024)))),
+                        ) . ' ' . $unit[$i]) . ' (' . (@round(
+                            $pmu / (1024 ** ($i = (integer)floor(log($pmu, 1024)))),
                             2
-                        ) . ' ' . $unit[$i]) . "), Execution time: " . bcsub($b_string, $a_string) . " -->\n";
+                        ) . ' ' . $unit[$i]) . '), Execution time: ' . bcsub($b_string, $a_string) . ' -->' . "\n";
             }
 
-            if (Eisodos::$parameterHandler->eq("SavePageToDisk", "T")
-                and Eisodos::$parameterHandler->neq(Eisodos::$parameterHandler->getParam("SaveFileName"), "")) {
-                $f = fopen("SaveFile" . Eisodos::$parameterHandler->getParam("SaveFileName"), "w");
+            if (Eisodos::$parameterHandler->eq('SavePageToDisk', 'T')
+                and Eisodos::$parameterHandler->neq(Eisodos::$parameterHandler->getParam('SaveFileName'), '')) {
+                $f = fopen('SaveFile' . Eisodos::$parameterHandler->getParam('SaveFileName'), 'wb');
                 fwrite($f, $this->Response);
                 fclose($f);
             }
@@ -320,7 +332,7 @@ final class Render extends Singleton
      * @param array $renderOptions_
      * @return Singleton|void
      */
-    public function init($renderOptions_ = [])
+    public function init($renderOptions_ = []): Singleton
     {
     }
 
@@ -328,7 +340,7 @@ final class Render extends Singleton
      * Adds debug message
      * @param $debugMessage_
      */
-    public function pageDebugInfo($debugMessage_)
+    public function pageDebugInfo($debugMessage_): void
     {
         $this->_pageDebugInfo .= $debugMessage_ . PHP_EOL;
     }
@@ -357,7 +369,7 @@ final class Render extends Singleton
         $cacheOptions_ = [],
         $templateEngineOptions_ = [],
         $debugLevel_ = 'error'
-    ) {
+    ): void {
         $this->_scriptStartTime = microtime();               // script start time
         if (!Eisodos::$applicationName) {
             die('Application name is missing');
@@ -375,7 +387,7 @@ final class Render extends Singleton
 
         Eisodos::$logger->trace('Objects initialized', $this);
 
-        if (strlen(Eisodos::$parameterHandler->getParam('DEBUGGERSTORAGE')) > 0) {
+        if (Eisodos::$parameterHandler->getParam('DEBUGGERSTORAGE') !== '') {
             PhpConsole\Connector::setPostponeStorage(
                 new PhpConsole\Storage\File(Eisodos::$parameterHandler->getParam('DEBUGGERSTORAGE'))
             );
@@ -408,7 +420,7 @@ final class Render extends Singleton
         Eisodos::$parameterHandler->setParam(
             'IsAJAXRequest',
             (!empty($_SERVER['HTTP_X_REQUESTED_WITH'])
-                and strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') ? 'T' : 'F'
+                and strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') ? 'T' : 'F'
         );
 
         if (Eisodos::$parameterHandler->neq('ERROROUTPUT', '')) {
@@ -432,7 +444,7 @@ final class Render extends Singleton
      * Returns the current page full URL
      * @return string
      */
-    public function currentPageURL()
+    public function currentPageURL(): string
     {
         function strleft($s1, $s2)
         {
@@ -446,19 +458,19 @@ final class Render extends Singleton
         }
 
         $protocol = strleft(
-                strtolower($_SERVER["SERVER_PROTOCOL"]),
-                "/"
-            ) . (empty($_SERVER["HTTPS"]) ? '' : ($_SERVER["HTTPS"] == "on") ? "s" : "");
-        $port = ($_SERVER["SERVER_PORT"] == "80") ? "" : (":" . $_SERVER["SERVER_PORT"]);
+                strtolower($_SERVER['SERVER_PROTOCOL']),
+                '/'
+            ) . ((!empty($_SERVER['HTTPS']) and $_SERVER['HTTPS'] === 'on') ? 's' : '');
+        $port = ($_SERVER['SERVER_PORT'] === '80') ? '' : (':' . $_SERVER['SERVER_PORT']);
 
-        return $protocol . "://" . $_SERVER['SERVER_NAME'] . $port . $serverrequri;
+        return $protocol . '://' . $_SERVER['SERVER_NAME'] . $port . $serverrequri;
     }
 
     /**
      * Stores the current URL into a parameter
      * @param string $parameterName_ Parameter's name
      */
-    public function storeCurrentURL($parameterName_)
+    public function storeCurrentURL($parameterName_): void
     {
         Eisodos::$parameterHandler->setParam($parameterName_, $this->currentPageURL(), true);
     }
@@ -466,14 +478,14 @@ final class Render extends Singleton
     /**
      * @param bool $regenerateSessionId_
      */
-    public function logout($regenerateSessionId_ = true)
+    public function logout($regenerateSessionId_ = true): void
     {
         Eisodos::$parameterHandler->clean();
 
         session_destroy();
         session_unset();
-        if (Eisodos::$parameterHandler->neq("COOKIE_DOMAIN", "")) {
-            ini_set("session.cookie_domain", Eisodos::$parameterHandler->getParam("COOKIE_DOMAIN"));
+        if (Eisodos::$parameterHandler->neq('COOKIE_DOMAIN', '')) {
+            ini_set('session.cookie_domain', Eisodos::$parameterHandler->getParam('COOKIE_DOMAIN'));
         }
         session_name(Eisodos::$applicationName);
         session_start();
@@ -486,7 +498,7 @@ final class Render extends Singleton
     /**
      * Finish page generation and generate the page
      */
-    public function finish()
+    public function finish(): void
     {
         Eisodos::$parameterHandler->finish(true);
         if (ob_get_level() > 0) {
@@ -501,7 +513,7 @@ final class Render extends Singleton
      * @param bool $saveSessionVariables_
      * @param bool $handleLanguages_
      */
-    public function finishRaw($saveSessionVariables_ = false, $handleLanguages_ = false)
+    public function finishRaw($saveSessionVariables_ = false, $handleLanguages_ = false): void
     {
         Eisodos::$parameterHandler->finish($saveSessionVariables_);
 

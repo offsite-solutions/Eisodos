@@ -27,7 +27,7 @@ function eqs($param_, $value_, $true_, $false_, $parameterPrefix_ = '')
 {
     if (Eisodos::$parameterHandler->eq($param_, $value_)) {
         return $true_;
-    } else {
-        return $false_;
     }
+
+    return $false_;
 }

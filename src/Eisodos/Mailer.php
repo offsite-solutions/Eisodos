@@ -23,8 +23,8 @@ final class Mailer extends Singleton
      * Mailer initializer
      * @inheritDoc
      */
-    public function init($mailerOptions_=[]
-    ) {
+    public function init($mailerOptions_ = []
+    ): void {
     }
 
     /**
@@ -34,7 +34,7 @@ final class Mailer extends Singleton
      * @param string $body_
      * @param string $from_
      */
-    public function utf8_html_mail($to_, $subject_, $body_, $from_)
+    public function utf8_html_mail($to_, $subject_, $body_, $from_): void
     {
         try {
             $message = new Mail_mime(
@@ -77,7 +77,7 @@ final class Mailer extends Singleton
      * @param string $from_
      * @param array $filesToAttach_
      */
-    public function utf8_html_mail_attachment($to_, $subject_, $body_, $from_, $filesToAttach_ = array())
+    public function utf8_html_mail_attachment($to_, $subject_, $body_, $from_, $filesToAttach_ = array()): void
     {
         try {
             $message = new Mail_mime(
@@ -142,29 +142,29 @@ final class Mailer extends Singleton
         $batch_echo_ = false,
         $batch_skip_ = 0,
         $testOnly_ = false
-    ) {
-        $log = "";
+    ): string {
+        $log = '';
         $num = 0;
 
-        foreach ($to_ as $tosend => $paramstext) {
+        foreach ($to_ as $toSend => $paramstext) {
             $num++;
             if ($num < $batch_skip_) {
-                $logTXT = "SKIP\t$num\t" . $tosend . "\t\t" . date("H:i:s") . "\n";
+                $logTXT = "SKIP\t$num\t" . $toSend . "\t\t" . date('H:i:s') . "\n";
                 if ($batch_echo_) {
                     print($logTXT);
                     @ob_flush();
                 }
             } else {
-                if ($num % $batch_loopCount_ == 0) {
-                    $logTXT = "WAIT\t\t\t$batch_waitBetweenLoops_ sec\t" . date("H:i:s") . "\n";
-                    $log = $log . $logTXT;
+                if ($num % $batch_loopCount_ === 0) {
+                    $logTXT = "WAIT\t\t\t$batch_waitBetweenLoops_ sec\t" . date('H:i:s') . "\n";
+                    $log .= $logTXT;
                     if ($batch_echo_) {
                         print($logTXT);
                         @ob_flush();
                     }
                     sleep($batch_waitBetweenLoops_);
                 }
-                $tosend = trim($tosend);
+                $toSend = trim($toSend);
 
                 // creating mail
                 $message = new Mail_mime(
@@ -178,7 +178,7 @@ final class Mailer extends Singleton
                 // adding params
                 $params = explode("\n", $paramstext);
                 foreach ($params as $line) {
-                    $pieces = explode("=", $line, 2);
+                    $pieces = explode('=', $line, 2);
                     Eisodos::$parameterHandler->setParam($pieces[0], $pieces[1]);
                 }
 
@@ -199,17 +199,17 @@ final class Mailer extends Singleton
 
                 try {
                     if (!$testOnly_) {
-                        $mail->send($tosend, $headers, $body);
+                        $mail->send($toSend, $headers, $body);
                     }
-                    $logTXT = "OK\t$num\t" . $tosend . "\t\t" . date('H:i:s') . "\n";
-                    $log = $log . $logTXT;
+                    $logTXT = "OK\t$num\t" . $toSend . "\t\t" . date('H:i:s') . "\n";
+                    $log .= $logTXT;
                     if ($batch_echo_) {
                         print($logTXT);
                         @ob_flush();
                     }
                 } catch (Exception $e) {
-                    $logTXT = "Error\t$num\t" . $tosend . "\t" . $e->getMessage() . "\t" . date('H:i:s') . "\n";
-                    $log = $log . $logTXT;
+                    $logTXT = "Error\t$num\t" . $toSend . "\t" . $e->getMessage() . "\t" . date('H:i:s') . "\n";
+                    $log .= $logTXT;
                     if ($batch_echo_) {
                         print($logTXT);
                         @ob_flush();

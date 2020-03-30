@@ -40,15 +40,15 @@ final class Translator extends Singleton implements ParserInterface
         if (Eisodos::$parameterHandler->neq('USERLANGIDFILE', '')
             and Eisodos::$parameterHandler->neq('Langs', '')
             and file_exists(Eisodos::$parameterHandler->getParam('USERLANGIDFILE'))) {
-            $file = fopen(Eisodos::$parameterHandler->getParam('USERLANGIDFILE'), 'r');
+            $file = fopen(Eisodos::$parameterHandler->getParam('USERLANGIDFILE'), 'rb');
             if (!($file === false)) {
                 while (!feof($file)) {
                     $line = rtrim(fgets($file));
-                    if (strlen($line) == 0) {
+                    if ($line === '') {
                         continue;
                     }
                     $l = explode('=', $line, 2);
-                    $this->userLanguageIDs[strtoupper($l[0])] = (count($l) == 1 ? '' : $l[1]);
+                    $this->userLanguageIDs[strtoupper($l[0])] = (count($l) === 1 ? '' : $l[1]);
                 }
                 fclose($file);
             }
@@ -60,7 +60,7 @@ final class Translator extends Singleton implements ParserInterface
     /**
      * Translation initialization
      * @param array $translatorOptions_
-     * @return Singleton|void
+     * @return void
      * @throws Exception
      */
     public function init($translatorOptions_ = [])
@@ -90,23 +90,23 @@ final class Translator extends Singleton implements ParserInterface
         if (Eisodos::$parameterHandler->neq('LANGIDFILE', '')
             and Eisodos::$parameterHandler->neq('Langs', '')
             and file_exists(Eisodos::$parameterHandler->getParam('LANGIDFILE'))) {
-            $file = fopen(Eisodos::$parameterHandler->getParam('LANGIDFILE'), 'r');
+            $file = fopen(Eisodos::$parameterHandler->getParam('LANGIDFILE'), 'rb');
             if (!($file === false)
                 and (Eisodos::$parameterHandler->neq('COLLECTLANGIDS', 'T')
                     or flock($file, LOCK_EX))) {
                 while (!feof($file)) {
                     $line = rtrim(fgets($file));
-                    if (strlen($line) == 0) {
+                    if ($line === '') {
                         continue;
                     }
                     $l = explode('=', $line, 2);
                     $l[0] = strtoupper($l[0]);
                     if ($this->_collectLangIDs) {
                         if (preg_match('/^[#0-9A-Z_.\-]+$/', $l[0])) {
-                            $this->_languageIDs[$l[0]] = (count($l) == 1 ? '' : $l[1]);
+                            $this->_languageIDs[$l[0]] = (count($l) === 1 ? '' : $l[1]);
                         }
                     } else {
-                        $this->_languageIDs[$l[0]] = (count($l) == 1 ? '' : $l[1]);
+                        $this->_languageIDs[$l[0]] = (count($l) === 1 ? '' : $l[1]);
                     }
                 }
                 flock($file, LOCK_UN);
@@ -125,7 +125,7 @@ final class Translator extends Singleton implements ParserInterface
      * @param bool $findHashmarked_ Gives back hashmarked (default text) translation if no translation found
      * @return string
      */
-    public function getLangText($languageID_, $textParams_ = array(), $findHashmarked_ = false)
+    public function getLangText($languageID_, $textParams_ = array(), $findHashmarked_ = false): string
     {
         if (strpos($languageID_, ',') !== false) {
             [$languageID_, $defText] = explode(',', $languageID_, 2);
@@ -151,34 +151,34 @@ final class Translator extends Singleton implements ParserInterface
                     $languageID_ . '.' . $lang
                 );
             }
-            if ($defText != '') {
+            if ($defText !== '') {
                 $this->_languageIDs[$languageID_ . '.#'] = $defText;
             }
         }
-        if ($defText == '' and $findHashmarked_) {
+        if ($defText === '' and $findHashmarked_) {
             $defText = Eisodos::$utils->safe_array_value($this->_languageIDs, $languageID_ . '.#', '');
         }
         if (Eisodos::$parameterHandler->eq('SHOWLANGIDS', 'T')) {
             return ':' . $languageID_;
-        } else {
-            return @vsprintf(
+        }
+
+        return @vsprintf(
+            Eisodos::$utils->safe_array_value(
+                $this->userLanguageIDs,
+                $languageID_ . '.' . $currentLanguage,
                 Eisodos::$utils->safe_array_value(
-                    $this->userLanguageIDs,
+                    $this->_languageIDs,
                     $languageID_ . '.' . $currentLanguage,
                     Eisodos::$utils->safe_array_value(
                         $this->_languageIDs,
-                        $languageID_ . '.' . $currentLanguage,
-                        Eisodos::$utils->safe_array_value(
-                            $this->_languageIDs,
-                            strtoupper($languageID_ . '.' . Eisodos::$parameterHandler->getParam('DEFLANG')),
-                            ((Eisodos::$parameterHandler->eq('SHOWMISSINGLANGIDS', 'T')
-                                and ($defText == '')) ? ':' . $languageID_ : $defText)
-                        )
+                        strtoupper($languageID_ . '.' . Eisodos::$parameterHandler->getParam('DEFLANG')),
+                        ((Eisodos::$parameterHandler->eq('SHOWMISSINGLANGIDS', 'T')
+                            and ($defText === '')) ? ':' . $languageID_ : $defText)
                     )
-                ),
-                $textParams_
-            );
-        }
+                )
+            ),
+            $textParams_
+        );
     }
 
     /**
@@ -187,25 +187,23 @@ final class Translator extends Singleton implements ParserInterface
      * @param bool $findHashmarked_
      * @return string
      */
-    public function explodeLangText($languageFormat_, $findHashmarked_ = false)
+    public function explodeLangText($languageFormat_, $findHashmarked_ = false): string
     {
-        $p = explode(":", $languageFormat_);
+        $p = explode(':', $languageFormat_);
 
-        return Eisodos::$translator->getLangText($p[0], explode(";", (count($p) == 1 ? "" : $p[1])), $findHashmarked_);
+        return Eisodos::$translator->getLangText($p[0], explode(';', (count($p) === 1 ? '' : $p[1])), $findHashmarked_);
     }
 
     /**
      * Gives back language ids only
      * @return array
      */
-    public function getLanguageIDs()
+    public function getLanguageIDs(): array
     {
         $r = array();
         foreach ($this->_languageIDs as $key => $row) {
-            if (!strpos($key, '.#')) {
-                if (!array_key_exists(substr($key, 0, -3), $r)) {
-                    $r[substr($key, 0, -3)] = '';
-                }
+            if (!strpos($key, '.#') and !array_key_exists(substr($key, 0, -3), $r)) {
+                $r[substr($key, 0, -3)] = '';
             }
         }
 
@@ -218,7 +216,7 @@ final class Translator extends Singleton implements ParserInterface
      * @param bool $userEdited
      * @return string
      */
-    public function getLangTextForTranslate($languageID_, $language, $userEdited = true)
+    public function getLangTextForTranslate($languageID_, $language, $userEdited = true): string
     {
         $languageID_ = strtoupper($languageID_);
         $language = strtoupper($language);
@@ -232,13 +230,13 @@ final class Translator extends Singleton implements ParserInterface
                     ''
                 )
             );
-        } else {
-            return Eisodos::$utils->safe_array_value(
-                $this->_languageIDs,
-                $languageID_ . '.' . $language,
-                ''
-            );
         }
+
+        return Eisodos::$utils->safe_array_value(
+            $this->_languageIDs,
+            $languageID_ . '.' . $language,
+            ''
+        );
     }
 
     /**
@@ -247,7 +245,7 @@ final class Translator extends Singleton implements ParserInterface
      * @param bool $findHashmarked_ Give back hashmarked (default) translation if no translation found
      * @return string
      */
-    public function translateText($text_, $findHashmarked_ = false)
+    public function translateText($text_, $findHashmarked_ = false): string
     {
         $loopCountLimit = (integer)Eisodos::$parameterHandler->getParam('LOOPCOUNT', '1000');
         $LoopCount = 0;
@@ -272,21 +270,21 @@ final class Translator extends Singleton implements ParserInterface
 
     public function finish()
     {
-        if (Eisodos::$parameterHandler->neq("LANGIDFILE", "")
-            and Eisodos::$parameterHandler->neq("LANGS", "")
-            and Eisodos::$parameterHandler->eq("COLLECTLANGIDS", "T")
+        if (Eisodos::$parameterHandler->neq('LANGIDFILE', '')
+            and Eisodos::$parameterHandler->neq('LANGS', '')
+            and Eisodos::$parameterHandler->eq('COLLECTLANGIDS', 'T')
             and $this->_languageIDsFileError === false
-            and $this->_languageIDsCRC != crc32(print_r($this->_languageIDs, true))
+            and $this->_languageIDsCRC !== crc32(print_r($this->_languageIDs, true))
         ) {
-            $file = fopen(Eisodos::$parameterHandler->getParam("LANGIDFILE"), "w");
+            $file = fopen(Eisodos::$parameterHandler->getParam('LANGIDFILE'), 'wb');
             if (flock($file, LOCK_EX)) {
                 ksort($this->_languageIDs);
                 foreach ($this->_languageIDs as $key => $value) {
-                    fwrite($file, $key . "=" . $value . "\n");
+                    fwrite($file, $key . '=' . $value . "\n");
                 }
                 flock($file, LOCK_UN);
             } else {
-                PC::debug("Language file was blocked for writing!");
+                PC::debug('Language file was blocked for writing!');
             }
             fclose($file);
         }
@@ -295,7 +293,7 @@ final class Translator extends Singleton implements ParserInterface
     /**
      * @inheritDoc
      */
-    public function openTag()
+    public function openTag(): string
     {
         return '[:';
     }
@@ -303,7 +301,7 @@ final class Translator extends Singleton implements ParserInterface
     /**
      * @inheritDoc
      */
-    public function closeTag()
+    public function closeTag(): string
     {
         return ':]';
     }
@@ -311,7 +309,7 @@ final class Translator extends Singleton implements ParserInterface
     /**
      * @inheritDoc
      */
-    public function parse($text_, $blockPosition = false)
+    public function parse($text_, $blockPosition = false): string
     {
         $text_ = Eisodos::$utils->replace_all(
             $text_,
@@ -323,7 +321,8 @@ final class Translator extends Singleton implements ParserInterface
         return $text_;
     }
 
-    public function enabled()
+    /** @inheritDoc */
+    public function enabled(): bool
     {
         return (Eisodos::$parameterHandler->neq('TranslateLanguageTags', 'F')
             and Eisodos::$parameterHandler->neq('LANGS', ''));

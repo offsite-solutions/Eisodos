@@ -17,24 +17,24 @@ interface ParserInterface
      * @param int|bool $blockPosition_ The identified openTag first occurrence in text_
      * @return string The new page after parsing
      */
-    public function parse($text_, $blockPosition_ = false);
+    public function parse($text_, $blockPosition_ = false): string;
 
     /**
      * Defines the opening tag
      * @return string
      */
-    public function openTag();
+    public function openTag(): string;
 
     /**
      * Defines the opening tag
      * @return string
      */
-    public function closeTag();
+    public function closeTag(): string;
 
     /**
      * Defines the parser is enabled or not
      * @return bool
      */
-    public function enabled();
+    public function enabled(): bool;
 
 }

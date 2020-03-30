@@ -13,7 +13,7 @@ class CallbackFunctionParser implements ParserInterface
     /**
      * @inheritDoc
      */
-    public function openTag()
+    public function openTag(): string
     {
         return '<%FUNC%';
     }
@@ -21,7 +21,7 @@ class CallbackFunctionParser implements ParserInterface
     /**
      * @inheritDoc
      */
-    public function closeTag()
+    public function closeTag(): string
     {
         return '%FUNC%>';
     }
@@ -29,7 +29,7 @@ class CallbackFunctionParser implements ParserInterface
     /**
      * @inheritDoc
      */
-    public function parse($text_, $blockPosition = false)
+    public function parse($text_, $blockPosition = false): string
     {
         $orig = '';
         try {
@@ -43,24 +43,25 @@ class CallbackFunctionParser implements ParserInterface
                     0,
                     Eisodos::$utils->_strpos_offset('%' . $structure . '%>', $orig_, $a) + 1 + strlen($structure) + 2
                 );
-                if (substr_count($orig_temp, '<%') == substr_count($orig_temp, '%>')) {
+                if (substr_count($orig_temp, '<%') === substr_count($orig_temp, '%>')) {
                     $orig = $orig_temp;
                     break;
                 }
             }
-            if (strlen($orig) == 0) {
-                throw new Exception('Structure is not closed!');
+            if ($orig === '') {
+                throw new \RuntimeException('Structure is not closed!');
             }
             $body = substr(
                 $orig,
                 strlen($structure) + 3,
                 strlen($orig) - (strlen($structure) * 2 + 6)
-            ); // a struktura parameterezese
+            );
             $body = trim($body);
             $blockLines = explode("\n", $body);
             foreach ($blockLines as &$row) {
                 $row = trim($row);
             }
+            unset($row);
 
             // $this->writeErrorLog(NULL,$debug);
 
@@ -78,30 +79,30 @@ class CallbackFunctionParser implements ParserInterface
             $parameterName = '';
             $parseValue = false;
 
-            for ($a = 0; $a < count($blockLines); $a++) {
-                if ($multiLineSeparator == ''
-                    and strpos($blockLines[$a], '>>') !== false) {
-                    $parameterName = (trim(substr($blockLines[$a], 0, strpos($blockLines[$a], '>>'))));
-                    if ($parameterName[0] == '@') {
+            foreach ($blockLines as $blockLine) {
+                if ($multiLineSeparator === ''
+                    and strpos($blockLine, '>>') !== false) {
+                    $parameterName = (trim(substr($blockLine, 0, strpos($blockLine, '>>'))));
+                    if (strpos($parameterName, '@') === 0) {
                         $parseValue = true;
                         $parameterName = substr($parameterName, 1);
                     } else {
                         $parseValue = false;
                     }
-                    $multiLineSeparator = substr($blockLines[$a], strpos($blockLines[$a], '>>'));
+                    $multiLineSeparator = substr($blockLine, strpos($blockLine, '>>'));
                     $multiLineSeparator = substr($multiLineSeparator, 0, strpos($multiLineSeparator, '='));
                     $multiLineCloseSeparator = Eisodos::$utils->replace_all($multiLineSeparator, '>', '<');
-                    $LFuncParams[$parameterName] = substr($blockLines[$a], strpos($blockLines[$a], '=') + 1);
-                } elseif (strlen($multiLineSeparator) == 0 and strlen($blockLines[$a]) >= 2) {
-                    $parameterName = (trim(substr($blockLines[$a], 0, strpos($blockLines[$a], '='))));
-                    if ($parameterName[0] == '@') {
+                    $LFuncParams[$parameterName] = substr($blockLine, strpos($blockLine, '=') + 1);
+                } elseif ($multiLineSeparator === '' and strlen($blockLine) >= 2) {
+                    $parameterName = (trim(substr($blockLine, 0, strpos($blockLine, '='))));
+                    if (strpos($parameterName, '@') === 0) {
                         $parseValue = true;
                         $parameterName = substr($parameterName, 1);
                     } else {
                         $parseValue = false;
                     }
                     $multiLineSeparator = '';
-                    $value = substr($blockLines[$a], strpos($blockLines[$a], '=') + 1);
+                    $value = substr($blockLine, strpos($blockLine, '=') + 1);
                     switch ($parameterName) {
                         case '_include':
                             $include = trim($value);
@@ -113,7 +114,7 @@ class CallbackFunctionParser implements ParserInterface
                             $parameterPrefix = trim($value);
                             break;
                         case '_real_parameters':
-                            $userFuncArray = in_array(trim(strtoupper($value)), ['Y', 'T', '1', 'TRUE', 'ON']);
+                            $userFuncArray = in_array(strtoupper(trim($value)), ['Y', 'T', '1', 'TRUE', 'ON'], true);
                             break;
                         default:
                             $LFuncParams[$parameterName] = ($parseValue ? Eisodos::$templateEngine->parse(
@@ -122,32 +123,32 @@ class CallbackFunctionParser implements ParserInterface
                             ) : $value);
                             break;
                     }
-                } elseif (strlen($multiLineSeparator) > 0) {
-                    if (trim($blockLines[$a]) == $multiLineCloseSeparator) {
+                } elseif ($multiLineSeparator !== '') {
+                    if (trim($blockLine) === $multiLineCloseSeparator) {
                         $LFuncParams[$parameterName] = ($parseValue ? Eisodos::$templateEngine->parse(
                             $LFuncParams[$parameterName],
                             $LFuncParams
                         ) : $LFuncParams[$parameterName]);
-                        $parameterName = "";
-                        $multiLineSeparator = "";
+                        $parameterName = '';
+                        $multiLineSeparator = '';
                     } else {
-                        $LFuncParams[$parameterName] = $LFuncParams[trim($parameterName)] . "\n" . $blockLines[$a];
+                        $LFuncParams[$parameterName] = $LFuncParams[trim($parameterName)] . "\n" . $blockLine;
                     }
-                } elseif (strlen(trim($blockLines[$a])) > 0) {
+                } elseif (trim($blockLine) !== '') {
                     Eisodos::$render->pageDebugInfo("Parameter parse error in INC structure [$parameterName]!");
                 }
             }
 
             // if parameter prefix is not null then give LFuncParams to global parameters
 
-            if (strlen($parameterPrefix) > 0) {
+            if ($parameterPrefix !== '') {
                 foreach ($LFuncParams as $key => $value) {
-                    Eisodos::$parameterHandler->setParam($parameterPrefix . "_" . $key, $value);
+                    Eisodos::$parameterHandler->setParam($parameterPrefix . '_' . $key, $value);
                 }
             }
 
             {
-                if (strlen($include) > 0) {
+                if ($include !== '') {
                     @require_once($include);
                 }
 
@@ -160,7 +161,7 @@ class CallbackFunctionParser implements ParserInterface
                             array_merge(array_values($LFuncParams), [$parameterPrefix])
                         ) :
                         call_user_func(
-                            ($functionName == '' ? Eisodos::$templateEngine->defaultCallbackFunctionName : $functionName),
+                            ($functionName === '' ? Eisodos::$templateEngine->defaultCallbackFunctionName : $functionName),
                             $LFuncParams,
                             $parameterPrefix
                         )),
@@ -171,11 +172,18 @@ class CallbackFunctionParser implements ParserInterface
                 return ($result);
             }
         } catch (Exception $e) {
-            return Eisodos::$utils->replace_all($text_, $orig, "<!-- Error in include: " . $e->getMessage() . " -->", false, false);
+            return Eisodos::$utils->replace_all(
+                $text_,
+                $orig,
+                '<!-- Error in include: ' . $e->getMessage() . ' -->',
+                false,
+                false
+            );
         }
     }
 
-    public function enabled()
+    /** @inheritDoc */
+    public function enabled(): bool
     {
         return true;
     }
