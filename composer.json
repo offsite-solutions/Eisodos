@@ -12,11 +12,11 @@
   "require": {
     "php": ">=7.2.0",
     "ext-mbstring": "*",
-    "vendor/psr/log": "^1.0",
-    "vendor/php-console/php-console": "^3.1",
+    "psr/log": "^1.0",
+    "php-console/php-console": "^3.1",
     "ext-json": "*",
-    "vendor/pear/mail": "*",
-    "vendor/pear/mail_mime": "*",
+    "pear/mail": "*",
+    "pear/mail_mime": "*",
     "ext-bcmath": "*"
   },
   "require-dev": {
