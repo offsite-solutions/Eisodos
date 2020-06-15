@@ -50,6 +50,11 @@ class Eisodos extends Singleton
      * @var Logger $logger
      */
     public static $logger;
+    
+    /**
+     * @var DBConnectors $dbconnectors
+     */
+    public static $dbconnectors;
 
     /**
      * @var string $applicationName Application's name, must be initialized at init
@@ -84,6 +89,7 @@ class Eisodos extends Singleton
             self::$templateEngine = TemplateEngine::getInstance();
             self::$translator = Translator::getInstance();
             self::$mailer = Mailer::getInstance();
+            self::$dbconnectors = DBConnectors::getInstance();
         } catch (Exception $e) {
             die('Initialization failure');
         }
