@@ -23,13 +23,14 @@
    *                   ['d'=>['a'=>'d','b'=>'e','c'='f'],'e'=>['a'=>'g','b'=>'h','c'='j']]
    *                   deprecated function: getSQLtoArrayFull0
    */
-  const RT_RAW = 0;
-  const RT_FIRST_ROW = 1;
-  const RT_FIRST_ROW_FIRST_COLUMN = 2;
-  const RT_ALL_KEY_VALUE_PAIRS = 3;
-  const RT_ALL_FIRST_COLUMN_VALUES = 4;
-  const RT_ALL_ROWS = 5;
-  const RT_ALL_ROWS_ASSOC = 6;
+  
+  define('RT_RAW', 0);
+  define('RT_FIRST_ROW', 1);
+  define('RT_FIRST_ROW_FIRST_COLUMN', 2);
+  define('RT_ALL_KEY_VALUE_PAIRS', 3);
+  define('RT_ALL_FIRST_COLUMN_VALUES', 4);
+  define('RT_ALL_ROWS', 5);
+  define('RT_ALL_ROWS_ASSOC', 6);
   
   /**
    * Eisodos DB Connector Interface
@@ -39,31 +40,37 @@
     
     /**
      * Connect to a database
+     * @param string $databaseConfigSection_ Database connection config section
      * @param array $connectParameters_ Connect parameters
      * @param bool $persistent_ Persistent flag
      * @return void
      */
-    public function connect($connectParameters_ = [], $persistent_ = false): void;
+    public function connect($databaseConfigSection_ = 'Database', $connectParameters_ = [], $persistent_ = false): void;
     
     /**
      * Disconnect from database
+     * @param bool $force_ Close persistent connection also
      */
-    public function disconnect(): void;
+    public function disconnect($force_ = false): void;
     
     /**
      * Start transaction
+     * @param mixed $savePoint_ Transaction savepoint
+     * @throws \Exception
      */
-    public function startTransaction();
+    public function startTransaction($savePoint_ = NULL);
     
     /**
      * Commit transaction
+     * @param mixed $savePoint_ Transaction savepoint
      */
-    public function commit(): void;
+    public function commit($savePoint_ = NULL): void;
     
     /**
      * Rollback transaction
+     * @param mixed $savePoint_ Transaction savepoint
      */
-    public function rollback(): void;
+    public function rollback($savePoint_ = NULL): void;
     
     /**
      * Is session in transaction mode?
@@ -74,18 +81,20 @@
     /**
      * Executes simple DML sentence
      * @param string $SQL_ SQL sentence
+     * @param bool $throwException_
      * @return mixed
      */
-    public function executeDML($SQL_);
+    public function executeDML($SQL_, $throwException_ = true);
     
     /**
      * Execute prepared DML
      * @param string $SQL_ SQL sentence
-     * @param array $bindVariables_ Variable names
-     * @param array $variableTypes_ Variable types
+     * @param array $dataTypes_ Data types
+     * @param array $data_ Data
+     * @param bool $throwException_
      * @return mixed
      */
-    public function executePreparedDML($SQL_, $bindVariables_ = [], $variableTypes_ = []);
+    public function executePreparedDML($SQL_, $dataTypes_ = [], $data_ = [], $throwException_ = true);
     
     /**
      * Execute stored procedure
@@ -100,20 +109,27 @@
      * Run SQL query and get its result
      * @param string $SQL_ SQL sentence
      * @param int $resultTransformation_ Result transformation type constant
-     * @param mixed $resultSet Result array
-     * @param array $getOptions =[
+     * @param mixed $queryResult_ Result array
+     * @param array $getOptions_ =[
      *     'indexFieldName',   // index Field name is used in RT_ALL_ROWS
      *     ] Additional options
      * @param string $exceptionMessage_
      * @return mixed
+     * @throws Exception
      */
     public function query(
       $SQL_,
       $resultTransformation_,
-      &$resultSet = NULL,
-      $getOptions = [],
+      &$queryResult_ = NULL,
+      $getOptions_ = [],
       $exceptionMessage_ = ''
     );
+    
+    /**
+     * Get native connection object
+     * @return mixed
+     */
+    public function getConnection();
     
   }
 

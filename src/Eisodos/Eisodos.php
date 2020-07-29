@@ -54,7 +54,7 @@ class Eisodos extends Singleton
     /**
      * @var DBConnectors $dbconnectors
      */
-    public static $dbconnectors;
+    public static $dbConnectors;
 
     /**
      * @var string $applicationName Application's name, must be initialized at init
@@ -89,7 +89,7 @@ class Eisodos extends Singleton
             self::$templateEngine = TemplateEngine::getInstance();
             self::$translator = Translator::getInstance();
             self::$mailer = Mailer::getInstance();
-            self::$dbconnectors = DBConnectors::getInstance();
+            self::$dbConnectors = DBConnectors::getInstance();
         } catch (Exception $e) {
             die('Initialization failure');
         }
