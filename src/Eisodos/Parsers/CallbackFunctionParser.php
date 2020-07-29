@@ -6,6 +6,7 @@ namespace Eisodos\Parsers;
 use Eisodos\Eisodos;
 use Eisodos\Interfaces\ParserInterface;
 use Exception;
+use RuntimeException;
 
 class CallbackFunctionParser implements ParserInterface
 {
@@ -49,7 +50,7 @@ class CallbackFunctionParser implements ParserInterface
                 }
             }
             if ($orig === '') {
-                throw new \RuntimeException('Structure is not closed!');
+                throw new RuntimeException('Structure is not closed!');
             }
             $body = substr(
                 $orig,
@@ -149,7 +150,8 @@ class CallbackFunctionParser implements ParserInterface
 
             {
                 if ($include !== '') {
-                    @require_once($include);
+                  /** @noinspection PhpIncludeInspection */
+                  @require($include);
                 }
 
                 $result = Eisodos::$utils->replace_all(

@@ -1,6 +1,6 @@
-<?php
-
-namespace Eisodos;
+<?php /** @noinspection DuplicatedCode */
+  
+  namespace Eisodos;
 
 use Eisodos\Abstracts\Singleton;
 use Exception;

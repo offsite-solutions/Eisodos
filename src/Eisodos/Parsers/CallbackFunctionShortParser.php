@@ -50,10 +50,4 @@ class CallbackFunctionShortParser extends CallbackFunctionParser
         );
     }
 
-    /** @inheritDoc */
-    public function enabled(): bool
-    {
-        return true;
-    }
-
 }

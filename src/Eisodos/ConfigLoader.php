@@ -203,7 +203,7 @@ final class ConfigLoader extends Singleton
             try {
                 // loads file directly into the config cache
                 $this->_configCache[$configFile] = array_change_key_case(
-                    json_decode(file_get_contents($configFile), true)
+                  json_decode(file_get_contents($configFile), true, 512, JSON_THROW_ON_ERROR)
                 );
                 // read section from config cache
                 if (array_key_exists($section_, $this->_configCache[$configFile])) {

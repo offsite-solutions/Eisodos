@@ -27,7 +27,7 @@
      * @return DBConnectorInterface
      */
     public function registerDBConnector(DBConnectorInterface $connector_, $index_ = NULL): DBConnectorInterface {
-      if ($index_ === NULL or $index_ == '') {
+      if ($index_ === NULL or $index_ === '') {
         $this->_dbConnectors[] =& $connector_;
       } else {
         $this->_dbConnectors[$index_] =& $connector_;
@@ -42,7 +42,7 @@
      * @return DBConnectorInterface DB Connector object
      */
     public function connector($index_ = NULL): DBConnectorInterface {
-      if ($index_ === NULL or $index_ == '') {
+      if ($index_ === NULL or $index_ === '') {
         return $this->_dbConnectors[0];
       }
       

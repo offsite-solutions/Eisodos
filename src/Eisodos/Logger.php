@@ -23,7 +23,7 @@ final class Logger extends Singleton implements LoggerInterface
     /**
      * @var bool|null DebugEnabled
      */
-    private $debugEnabled = null;
+  private $debugEnabled = NULL;
 
     /**
      * @var int

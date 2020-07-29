@@ -39,7 +39,7 @@ class TemplateEngine extends Singleton
      */
     private function _getParameterExists($text_)
     {
-        return preg_match('/\$[0-9a-zA-Z_]+/', $text_);
+        return preg_match('/\$[\w]+/', $text_);
     }
 
     /**
@@ -51,7 +51,7 @@ class TemplateEngine extends Singleton
     private function _getParameterPos($text_, &$match_)
     {
         $matches = array();
-        if (preg_match('/\$[0-9a-zA-Z_]+/', $text_, $matches, PREG_OFFSET_CAPTURE)) {
+        if (preg_match('/\$[\w]+/', $text_, $matches, PREG_OFFSET_CAPTURE)) {
             if (isset($match_)) {
                 $match_ = $matches[0][0];
             }

@@ -3,7 +3,7 @@
 
 namespace Eisodos\Abstracts;
 
-use Exception;
+use RuntimeException;
 
 abstract class Singleton
 {
@@ -18,8 +18,7 @@ abstract class Singleton
     protected static $instances;
 
     /**
-     * Returns the *Singleton* instance of this class.
-     * @inheritDoc
+     * Returns the *Singleton* instance of this class
      */
     public static function getInstance()
     {
@@ -48,11 +47,11 @@ abstract class Singleton
 
     /**
      * prevent from being unserialized (which would create a second instance of it)
-     * @throws Exception
+     * @throws RuntimeException
      */
     public function __wakeup()
     {
-        throw new \RuntimeException('Cannot unserialize a singleton.');
+        throw new RuntimeException('Cannot unserialize a singleton.');
     }
 
     /**

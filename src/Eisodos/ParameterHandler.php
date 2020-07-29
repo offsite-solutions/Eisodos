@@ -308,7 +308,7 @@ final class ParameterHandler extends Singleton
             $this->setParam($n, $v, $storeIt, $cookieIt);
 
             if (!is_array($v)) {
-                if ($this->eq('DEBUGMISSINGPARAMS', 'T') and ($v != '') and !array_key_exists(
+                if ($this->eq('DEBUGMISSINGPARAMS', 'T') and ($v !== '') and !array_key_exists(
                         $n,
                         $LParamFilters2
                     )) {
@@ -581,6 +581,7 @@ final class ParameterHandler extends Singleton
      * @param string $parameterName_ Parameter's name - case insensitive
      * @param string $defaultValue_ in case of parameter is not exists or its value is empty, return with this
      * @return string|array
+     * @noinspection TypeUnsafeComparisonInspection
      */
     public function getParam($parameterName_, $defaultValue_ = '')
     {

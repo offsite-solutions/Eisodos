@@ -3,6 +3,8 @@
   
   namespace Eisodos\Interfaces;
   
+  use Exception;
+
   /**
    * Result types
    *   insert into test (a,b,c) values ('d','e','f'),('g','h','j')
@@ -61,7 +63,7 @@
     /**
      * Start transaction
      * @param mixed $savePoint_ Transaction savepoint
-     * @throws \Exception
+     * @throws Exception
      */
     public function startTransaction($savePoint_ = NULL);
     
