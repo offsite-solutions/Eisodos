@@ -37,6 +37,11 @@
    * @package Eisodos
    */
   interface DBConnectorInterface {
+  
+    /**
+     * Connection is active and connected
+     */
+    public function connected(): bool;
     
     /**
      * Connect to a database
