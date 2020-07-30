@@ -4,6 +4,7 @@
   namespace Eisodos\Interfaces;
   
   use Exception;
+  use RuntimeException;
 
   /**
    * Result types
@@ -39,7 +40,7 @@
    * @package Eisodos
    */
   interface DBConnectorInterface {
-  
+    
     /**
      * Connection is active and connected
      */
@@ -114,8 +115,8 @@
     
     /**
      * Run SQL query and get its result
-     * @param string $SQL_ SQL sentence
      * @param int $resultTransformation_ Result transformation type constant
+     * @param string $SQL_ SQL sentence
      * @param mixed $queryResult_ Result array
      * @param array $getOptions_ =[
      *     'indexFieldName',   // index Field name is used in RT_ALL_ROWS
@@ -125,8 +126,8 @@
      * @throws Exception
      */
     public function query(
-      $SQL_,
       $resultTransformation_,
+      $SQL_,
       &$queryResult_ = NULL,
       $getOptions_ = [],
       $exceptionMessage_ = ''
@@ -137,6 +138,67 @@
      * @return mixed
      */
     public function getConnection();
+    
+    /**
+     * Converts value to SQL keyword if empty
+     * @param mixed $value_ Value
+     * @param bool $isString_ Value is string
+     * @param int $maxLength_ Maximum length of column
+     * @param string $exception_ Throw exception in case of error
+     * @param bool $withComma_ add comma to end of text
+     * @param string $keyword_ SQL keyword
+     * @return string
+     * @throws RuntimeException
+     */
+    public function emptySQLField($value_, $isString_ = true, $maxLength_ = 0, $exception_ = "", $withComma_ = false, $keyword_ = "NULL");
+    
+    /**
+     * Converts value to NULL if empty
+     * @param mixed $value_ Value
+     * @param bool $isString_ Value is string
+     * @param int $maxLength_ Maximum length of column
+     * @param string $exception_ Throw exception in case of error
+     * @param bool $withComma_ add comma to end of text
+     * @return string
+     * @throws RuntimeException
+     */
+    function nullStr($value_, $isString_ = true, $maxLength_ = 0, $exception_ = "", $withComma_ = false);
+    
+    /**
+     * Converts value to DEFAULT if empty
+     * @param mixed $value_ Value
+     * @param bool $isString_ Value is string
+     * @param int $maxLength_ Maximum length of column
+     * @param string $exception_ Throw exception in case of error
+     * @param bool $withComma_ add comma to end of text
+     * @return string
+     * @throws RuntimeException
+     */
+    function defaultStr($value_, $isString_ = true, $maxLength_ = 0, $exception_ = "", $withComma_ = false);
+    
+    /**
+     * Converts parameter value to NULL if empty
+     * @param mixed $value_ Value
+     * @param bool $isString_ Value is string
+     * @param int $maxLength_ Maximum length of column
+     * @param string $exception_ Throw exception in case of error
+     * @param bool $withComma_ add comma to end of text
+     * @return string
+     * @throws RuntimeException
+     */
+    function nullStrParam($parameterName_, $isString_ = true, $maxLength_ = 0, $exception_ = "", $withComma_ = false);
+    
+    /**
+     * Converts parameter value to DEFAULT if empty
+     * @param mixed $value_ Value
+     * @param bool $isString_ Value is string
+     * @param int $maxLength_ Maximum length of column
+     * @param string $exception_ Throw exception in case of error
+     * @param bool $withComma_ add comma to end of text
+     * @return string
+     * @throws RuntimeException
+     */
+    function defaultStrParam($parameterName_, $isString_ = true, $maxLength_ = 0, $exception_ = "", $withComma_ = false);
     
   }
 

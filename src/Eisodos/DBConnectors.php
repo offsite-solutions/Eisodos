@@ -4,7 +4,7 @@
   
   use Eisodos\Abstracts\Singleton;
   use Eisodos\Interfaces\DBConnectorInterface;
-  
+
   /**
    * Eisodos DB Connectors singleton class, usage:
    *
@@ -37,6 +37,15 @@
     }
     
     /**
+     * Access one of the DB Connectors object - kept for backward compatibility
+     * @param int|null $index_ connector object's index
+     * @return DBConnectorInterface DB Connector object
+     */
+    public function db($index_ = NULL): DBConnectorInterface {
+      return $this->connector($index_);
+    }
+    
+    /**
      * Access one of the DB Connectors object
      * @param int|null $index_ connector object's index, if empty gives back the first connector
      * @return DBConnectorInterface DB Connector object
@@ -47,15 +56,6 @@
       }
       
       return $this->_dbConnectors[$index_];
-    }
-    
-    /**
-     * Access one of the DB Connectors object - kept for backward compatibility
-     * @param int|null $index_ connector object's index
-     * @return DBConnectorInterface DB Connector object
-     */
-    public function db($index_ = NULL): DBConnectorInterface {
-      return $this->connector($index_);
     }
     
     /**

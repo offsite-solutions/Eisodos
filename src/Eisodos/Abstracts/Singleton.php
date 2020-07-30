@@ -1,13 +1,12 @@
 <?php
+  
+  
+  namespace Eisodos\Abstracts;
+  
+  use RuntimeException;
 
-
-namespace Eisodos\Abstracts;
-
-use RuntimeException;
-
-abstract class Singleton
-{
-
+  abstract class Singleton {
+    
     /**
      * The Singleton's instance is stored in a static field. This field is an
      * array, because we'll allow our Singleton to have subclasses. Each item in
@@ -16,48 +15,44 @@ abstract class Singleton
      * @var static $instances instances
      */
     protected static $instances;
-
-    /**
-     * Returns the *Singleton* instance of this class
-     */
-    public static function getInstance()
-    {
-        $cls = static::class;
-        if (!isset(static::$instances[$cls])) {
-            static::$instances[$cls] = new static();
-        }
-
-        return static::$instances[$cls];
-    }
-
+    
     /**
      * is not allowed to call from outside to prevent from creating multiple instances,
      * to use the singleton, you have to obtain the instance from Singleton::getInstance() instead
      */
-    protected function __construct()
-    {
+    protected function __construct() {
     }
-
+    
     /**
-     * prevent the instance from being cloned (which would create a second instance of it)
+     * Returns the *Singleton* instance of this class
      */
-    protected function __clone()
-    {
+    public static function getInstance() {
+      $cls = static::class;
+      if (!isset(static::$instances[$cls])) {
+        static::$instances[$cls] = new static();
+      }
+      
+      return static::$instances[$cls];
     }
-
+    
     /**
      * prevent from being unserialized (which would create a second instance of it)
      * @throws RuntimeException
      */
-    public function __wakeup()
-    {
-        throw new RuntimeException('Cannot unserialize a singleton.');
+    public function __wakeup() {
+      throw new RuntimeException('Cannot unserialize a singleton.');
     }
-
+    
+    /**
+     * prevent the instance from being cloned (which would create a second instance of it)
+     */
+    protected function __clone() {
+    }
+    
     /**
      * after getInstance() it must be initialized
      * @var mixed $options_ Object's options
      */
     abstract protected function init($options_);
-
-}
+    
+  }
