@@ -105,13 +105,33 @@
     public function executePreparedDML($SQL_, $dataTypes_ = [], $data_ = [], $throwException_ = true);
     
     /**
-     * Execute stored procedure
-     * @param string $procedureName_ Stored procedure name
-     * @param array $bindVariables_ Variable names
-     * @param array $variableTypes_ Variable Types
-     * @return mixed
+     * Preparing stored procedure parameter for binding
+     * @param array $bindVariables_ Parameter array reference
+     * @param string $variableName_ Parameter name
+     * @param string $dataType_ Datatype
+     * @param string $value_ Value
+     * @param string $inOut_ Direction
      */
-    public function executeStoredProcedure($procedureName_, $bindVariables_ = [], $variableTypes_ = []);
+    public function storedProcedureBind(&$bindVariables_, $variableName_, $dataType_, $value_, $inOut_ = 'IN');
+    
+    /**
+     * Preparing stored procedure parameter for binding from Eisodos parameter
+     * @param array $bindVariables_ Parameter array reference
+     * @param string $parameterName_ Parameter name
+     * @param string $dataType_ Datatype
+     */
+    public function storedProcedureBindParam(&$bindVariables_, $parameterName_, $dataType_);
+    
+    /**
+     * Executes stored procedure
+     * @param string $procedureName_ Procedure name
+     * @param array $bindVariables_ Parameter array
+     * @param array $resultArray_ Result array
+     * @param bool $throwException_ Throw exception in case of error
+     * @param int $case_ Result array key transformation
+     * @return string
+     */
+    public function executeStoredProcedure($procedureName_, $bindVariables_, &$resultArray_, $throwException_ = true, $case_ = CASE_UPPER);
     
     /**
      * Run SQL query and get its result
@@ -138,6 +158,12 @@
      * @return array
      */
     public function getLastQueryColumns();
+  
+    /**
+     * Gives back the last query's total rows
+     * @return integer
+     */
+    public function getLastQueryTotalRows();
     
     /**
      * Get native connection object
