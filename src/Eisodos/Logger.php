@@ -3,13 +3,13 @@
   namespace Eisodos;
   
   require_once('Utils.php');
-
+  
   use DateTime;
   use Eisodos\Abstracts\Singleton;
   use Exception;
   use PC;
   use Psr\Log\LoggerInterface;
-
+  
   final class Logger extends Singleton implements LoggerInterface {
     
     // Private variables
@@ -223,7 +223,11 @@
         if ($this->_cliMode) {
           echo($debugText . PHP_EOL);
         } else {
-          PC::debug($debugText);
+          if (class_exists('PC', false)) {
+            PC::debug($debugText);
+          } else {
+            // TODO gyujteni amig nincs objektum
+          }
         }
       }
     }

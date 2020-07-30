@@ -6,7 +6,7 @@
   use Eisodos\Interfaces\ParserInterface;
   use Exception;
   use RuntimeException;
-
+  
   class TemplateEngine extends Singleton {
     
     // Private properties
@@ -57,14 +57,16 @@
     ): string {
       $result = '';
       foreach ($templateID_ as $v) {
-        $result .= $this->getTemplate(
-          $v,
-          $listOfValuePairs_,
-          $addResultToResponse_,
-          $disableParsing_,
-          $disableLanguageTagParsing_,
-          $templateRow_
-        );
+        if ($v !== '') {
+          $result .= $this->getTemplate(
+            $v,
+            $listOfValuePairs_,
+            $addResultToResponse_,
+            $disableParsing_,
+            $disableLanguageTagParsing_,
+            $templateRow_
+          );
+        }
       }
       
       return $result;

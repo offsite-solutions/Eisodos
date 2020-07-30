@@ -6,7 +6,7 @@
   use Exception;
   use PC;
   use PhpConsole;
-
+  
   /**
    * Class Application - Manages classes, creation and initialization orders, page generation
    * Credit - According to https://designpatternsphp.readthedocs.io/
@@ -46,7 +46,7 @@
      *
      * @noinspection DuplicatedCode
      */
-
+    
     /**
      * Adds debug message
      * @param $debugMessage_
@@ -106,7 +106,7 @@
       }
       $debugger = PhpConsole\Helper::register();
       $handler = PC::getHandler();
-      if (isset($handler) and isset($debugger)) {
+      if (isset($handler) && isset($debugger)) {
         $handler->setHandleErrors(Eisodos::$parameterHandler->eq('DEBUGERRORS', 'T'));
         $handler->setHandleExceptions(Eisodos::$parameterHandler->eq('DEBUGEXCEPTIONS', 'T'));
         $debugger->setSourcesBasePath($_SERVER['DOCUMENT_ROOT']);

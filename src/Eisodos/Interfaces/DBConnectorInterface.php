@@ -132,6 +132,12 @@
       $getOptions_ = [],
       $exceptionMessage_ = ''
     );
+  
+    /**
+     * Gives back the last query's column names
+     * @return array
+     */
+    public function getLastQueryColumns();
     
     /**
      * Get native connection object

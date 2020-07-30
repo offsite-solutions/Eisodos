@@ -55,7 +55,7 @@
         return $this->_dbConnectors[0];
       }
       
-      return $this->_dbConnectors[$index_];
+      return $this->_dbConnectors[$index_-1];
     }
     
     /**

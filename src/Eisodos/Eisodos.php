@@ -5,7 +5,7 @@
   
   use Eisodos\Abstracts\Singleton;
   use Exception;
-
+  
   /**
    * Eisodos singleton class, usage:
    *

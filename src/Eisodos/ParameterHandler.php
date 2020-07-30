@@ -4,12 +4,12 @@
   
   // TODO: (normal) implement loopcount to protect infinite loops in replaceParamInString()
 // TODO: (low - must check performance test first) use multibyte substr, strpos, etc functions
-
+  
   use Eisodos\Abstracts\Singleton;
   use Exception;
   use PC;
   use RuntimeException;
-
+  
   /**
    * Class ParameterHandler
    * @package Eisodos
@@ -271,7 +271,7 @@
     /**
      * Add parameter to the parameter's array
      * @param string $parameterName_ Parameter's name
-     * @param string|array $value_ Parameter's value
+     * @param mixed $value_ Parameter's value
      * @param bool $sessionStored_ If true the parameter will be stored in the session variables
      * @param bool $cookieStored_ If true the parameter will be stored as cookie
      */
@@ -280,6 +280,7 @@
       if ($cookieStored_) {
         $sessionStored_ = false;
       }
+      if (!is_array($value_)) $value_=(string)$value_;
       if (!is_array($value_) and ($value_ !== '') and ($value_[0] === '^')) {
         $this->_params[$parameterName_]['value'] = $this->getParam(substr($value_, 1, strlen($value_)));
       } else {
@@ -647,9 +648,11 @@
     private function _saveSessionVariables(): void {
       // ha valami direktbe toltott a session tombbe, akkor azt felvesszuk az LParams tombbe
       // pl. facebook login felveszi a fb_0000_state valtozot ide
-      foreach ($_SESSION as $key => $v) {
-        if (!array_key_exists($key, $this->_params)) {
-          Eisodos::$parameterHandler->setParam($key, $v, true);
+      if (isset($_SESSION)) {
+        foreach ($_SESSION as $key => $v) {
+          if (!array_key_exists($key, $this->_params)) {
+            Eisodos::$parameterHandler->setParam($key, $v, true);
+          }
         }
       }
       $_SESSION = array();
