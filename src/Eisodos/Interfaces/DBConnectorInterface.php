@@ -90,7 +90,7 @@
      * Executes simple DML sentence
      * @param string $SQL_ SQL sentence
      * @param bool $throwException_
-     * @return mixed
+     * @return int Affected rows
      */
     public function executeDML($SQL_, $throwException_ = true);
     
@@ -100,7 +100,7 @@
      * @param array $dataTypes_ Data types
      * @param array $data_ Data
      * @param bool $throwException_
-     * @return mixed
+     * @return int Affected rows
      */
     public function executePreparedDML($SQL_, $dataTypes_ = [], $data_ = [], $throwException_ = true);
     

@@ -280,7 +280,7 @@
       if ($cookieStored_) {
         $sessionStored_ = false;
       }
-      if (!is_array($value_)) $value_=(string)$value_;
+      if (!is_array($value_)) $value_ = (string)$value_;
       if (!is_array($value_) and ($value_ !== '') and ($value_[0] === '^')) {
         $this->_params[$parameterName_]['value'] = $this->getParam(substr($value_, 1, strlen($value_)));
       } else {
@@ -724,7 +724,7 @@
       $st = '';
       foreach ($this->_params as $key => $value) {
         $st .= '     ' .
-          $key . '=' . (strlen($value['value']) > 255 ? substr($value['value'], 0, 255) . '...'
+          "(" . $value['flag'] . ")" . $key . '=' . (strlen($value['value']) > 255 ? substr($value['value'], 0, 255) . '...'
             : $value['value']) .
           "\n";
       }
