@@ -7,6 +7,7 @@
   use Mail;
   use Mail_mime;
   use PC;
+  use PEAR;
   
   final class Mailer extends Singleton {
     
@@ -32,8 +33,9 @@
      * @param string $subject_
      * @param string $body_
      * @param string $from_
+     * @return bool|string
      */
-    public function utf8_html_mail($to_, $subject_, $body_, $from_): void {
+    public function utf8_html_mail($to_, $subject_, $body_, $from_) {
       try {
         $message = new Mail_mime(
           array(
@@ -53,21 +55,27 @@
         }
         $headers = $message->headers($extraHeaders);
         
-        $SMTPOptions = [];
-        
         if (Eisodos::$parameterHandler->neq("SMTP.Host", "")) {
           $SMTPOptions = array('host' => Eisodos::$parameterHandler->getParam("SMTP.Host", ""),
             'auth' => Eisodos::$parameterHandler->neq("SMTP.Username", ""),
             'port' => Eisodos::$parameterHandler->getParam("SMTP.Port", ""),
             'username' => Eisodos::$parameterHandler->getParam("SMTP.Username", ""),
             'password' => Eisodos::$parameterHandler->getParam("SMTP.Password", ""));
+          $mail = Mail::factory("smtp", $SMTPOptions);
+        } else {
+          $mail = Mail::factory("mail");
         }
         
-        $mail = Mail::factory("mail", $SMTPOptions);
-        
         $mail->send($to_, $headers, $message->get());
+        
+        if (PEAR::isError($mail)) {
+          return $mail->getMessage();
+        }
+        
       } catch (Exception $e) {
         PC::debug($e->getMessage());
+        
+        return $e->getMessage();
       }
       
       if (isset($mail)) {
@@ -76,6 +84,8 @@
       if (isset($message)) {
         unset($message);
       }
+      
+      return true;
     }
     
     /**
@@ -109,19 +119,19 @@
         }
         $headers = $message->headers($extraHeaders);
         
-        $SMTPOptions = [];
-        
         if (Eisodos::$parameterHandler->neq("SMTP.Host", "")) {
           $SMTPOptions = array('host' => Eisodos::$parameterHandler->getParam("SMTP.Host", ""),
             'auth' => Eisodos::$parameterHandler->neq("SMTP.Username", ""),
             'port' => Eisodos::$parameterHandler->getParam("SMTP.Port", ""),
             'username' => Eisodos::$parameterHandler->getParam("SMTP.Username", ""),
             'password' => Eisodos::$parameterHandler->getParam("SMTP.Password", ""));
+          $mail = Mail::factory("smtp", $SMTPOptions);
+        } else {
+          $mail = Mail::factory("mail");
         }
         
-        $mail = Mail::factory("mail", $SMTPOptions);
-        
         $mail->send($to_, $headers, $message->get());
+        
       } catch (Exception $e) {
         PC::debug($e->getMessage());
       }
@@ -215,17 +225,16 @@
           }
           $headers = $message->headers($extraHeaders);
           
-          $SMTPOptions = [];
-          
           if (Eisodos::$parameterHandler->neq("SMTP.Host", "")) {
             $SMTPOptions = array('host' => Eisodos::$parameterHandler->getParam("SMTP.Host", ""),
               'auth' => Eisodos::$parameterHandler->neq("SMTP.Username", ""),
               'port' => Eisodos::$parameterHandler->getParam("SMTP.Port", ""),
               'username' => Eisodos::$parameterHandler->getParam("SMTP.Username", ""),
               'password' => Eisodos::$parameterHandler->getParam("SMTP.Password", ""));
+            $mail = Mail::factory("smtp", $SMTPOptions);
+          } else {
+            $mail = Mail::factory("mail");
           }
-          
-          $mail = Mail::factory("mail", $SMTPOptions);
           
           try {
             if (!$testOnly_) {
