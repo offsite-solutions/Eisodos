@@ -29,18 +29,6 @@
       $_cookies = array(),           // permanent cookies
       $_skippedParams = array();     // skipped parameters
     
-    /**
-     * Callback from parameter enabled
-     * @var bool
-     */
-    private $_enableParamCallback;
-    
-    /**
-     * Access absolute referenced templates enabled
-     * @var bool
-     */
-    private $_enableTemplateAbs;
-    
     // Public variables
     
     // Private functions
@@ -52,8 +40,6 @@
      */
     public function init($parameterHandlerOptions_ = []): void {
       $this->_initParameterCollecting();
-      $this->_enableParamCallback = $this->eq('ENABLEPARAMCALLBACK', 'T', 'F');
-      $this->_enableTemplateAbs = $this->eq('ENABLETEMPLATEABS', 'T', 'F');
       
       // loading session variables
       $this->_loadSessionVariables();

@@ -197,6 +197,8 @@
       $TemplateFile = '';
       $templateDir = Eisodos::$parameterHandler->getParam('TEMPLATEDIR');
       
+      // TODO EditorMode-ban engedelyezni a template-ek betolteset abszolut path-rol (vendor/EisodosEditor/templates/) hogy ne kelljen linkelni
+      
       if ($Page === '') {
         if (strpos($templateDir, 'http://') === false
           and strpos($templateDir, 'https://') === false) {
@@ -435,7 +437,7 @@
               $paramValue = $this->getTemplate(
                 Eisodos::$utils->replace_all(
                   Eisodos::$utils->replace_all(
-                    substr($paramName, 12, strlen($paramName)),
+                    substr($paramName, 12),
                     '__',
                     '/',
                     true,
@@ -454,6 +456,18 @@
               );
             } else {
               $paramValue = '<!-- Absolute inline templates not allowed -->';
+            }
+          } elseif (strpos($paramName, 'callback_') === 0) {
+            if (Eisodos::$templateEngine->defaultCallbackFunctionName
+              && Eisodos::$parameterHandler->eq('ENABLEPARAMCALLBACK', 'T', 'F')) {
+              $paramValue =
+                call_user_func(
+                  Eisodos::$templateEngine->defaultCallbackFunctionName,
+                  ["funcjob" => "paramcallback",
+                    "param" => substr($paramName, 9)]
+                );
+            } else {
+              $paramValue = '<!-- Parameter callbacks not allowed -->';
             }
           } else {
             $paramValue = Eisodos::$parameterHandler->getParam($paramName);
