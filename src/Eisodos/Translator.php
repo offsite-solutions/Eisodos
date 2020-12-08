@@ -248,8 +248,7 @@
             Eisodos::$utils->safe_array_value(
               $this->_languageIDs,
               strtoupper($languageID_ . '.' . Eisodos::$parameterHandler->getParam('DEFLANG')),
-              ((Eisodos::$parameterHandler->eq('SHOWMISSINGLANGIDS', 'T')
-                and ($defText === '')) ? ':' . $languageID_ : $defText)
+              (Eisodos::$parameterHandler->eq('SHOWMISSINGLANGIDS', 'T') ? ':' . $languageID_ : $defText)
             )
           )
         ),

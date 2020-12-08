@@ -90,7 +90,7 @@
           $logfile = fopen(
             Eisodos::$templateEngine->replaceParamInString(Eisodos::$parameterHandler->getParam('ERRORLOG')),
             'ab'
-          ) or die("can't open log file");
+          ) or die("can't open log file (".Eisodos::$templateEngine->replaceParamInString(Eisodos::$parameterHandler->getParam('ERRORLOG')).")");
           fwrite($logfile, $errorString);
           fclose($logfile);
         }
