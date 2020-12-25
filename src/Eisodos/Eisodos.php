@@ -1,5 +1,4 @@
-<?php
-  
+<?php /** @noinspection DuplicatedCode SpellCheckingInspection PhpUnusedFunctionInspection NotOptimalIfConditionsInspection */
   
   namespace Eisodos;
   
@@ -18,66 +17,66 @@
     /**
      * @var ParameterHandler $parameterHandler
      */
-    public static $parameterHandler;
+    public static ParameterHandler $parameterHandler;
     
     /**
      * @var ConfigLoader $configLoader
      */
-    public static $configLoader;
+    public static ConfigLoader $configLoader;
     
     /**
      * @var TemplateEngine $templateEngine
      */
-    public static $templateEngine;
+    public static TemplateEngine $templateEngine;
     
     /**
      * @var Translator $translator
      */
-    public static $translator;
+    public static Translator $translator;
     
     /**
      * @var Mailer $mailer
      */
-    public static $mailer;
+    public static Mailer $mailer;
     
     /**
      * @var Render $render
      */
-    public static $render;
+    public static Render $render;
     
     /**
      * @var Logger $logger
      */
-    public static $logger;
+    public static Logger $logger;
     
     /**
      * @var DBConnectors $dbconnectors
      */
-    public static $dbConnectors;
+    public static DBConnectors $dbConnectors;
     
     /**
      * @var string $applicationName Application's name, must be initialized at init
      */
-    public static $applicationName;
+    public static string $applicationName;
     
     /**
      * @var Utils $utils
      */
-    public static $utils;
+    public static Utils $utils;
     
     /**
      * @var string $applicationDir Application's dir, must be initialized at init
      */
-    public static $applicationDir;
-    
+    public static string $applicationDir;
+  
     /**
-     * @param array $applicationOptions_ =[
+     * @param array|mixed $options_ =[
      *     'applicationDir',   // Application directory
      *     'applicationName',  // Application name
      *     ] Application options - mandatory
      * @return Eisodos
      */
-    public function init($applicationOptions_): Eisodos {
+    public function init(array $options_): Eisodos {
       try {
         self::$utils = Utils::getInstance();
         self::$logger = Logger::getInstance();
@@ -91,12 +90,12 @@
       } catch (Exception $e) {
         die('Initialization failure');
       }
-      
-      self::$applicationDir = $applicationOptions_[0];
-      self::$applicationName = $applicationOptions_[1];
-      self::$parameterHandler->setParam('_applicationName', self::$applicationName);
-      self::$parameterHandler->setParam('_applicationDir', self::$applicationDir);
-      
+    
+      self::$applicationDir = $options_[0];
+      self::$applicationName = $options_[1];
+      self::$parameterHandler->setParam('._applicationName', self::$applicationName, false, false, 'eisodos');
+      self::$parameterHandler->setParam('._applicationDir', self::$applicationDir, false, false, 'eisodos');
+    
       return $this;
     }
     

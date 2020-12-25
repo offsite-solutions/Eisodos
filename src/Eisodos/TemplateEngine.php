@@ -1,4 +1,4 @@
-<?php
+<?php /** @noinspection DuplicatedCode SpellCheckingInspection PhpUnusedFunctionInspection NotOptimalIfConditionsInspection */
   
   namespace Eisodos;
   
@@ -31,10 +31,10 @@
     
     /**
      * Template Engine initialization
-     * @param mixed $templateEngineOptions_
+     * @param mixed $options_
      * @return void
      */
-    public function init($templateEngineOptions_): void {
+    public function init($options_): void {
     }
     
     /**
@@ -48,7 +48,7 @@
      * @return string
      */
     public function getMultiTemplate(
-      $templateID_,
+      array $templateID_,
       $listOfValuePairs_ = array(),
       $addResultToResponse_ = true,
       $disableParsing_ = false,
@@ -87,7 +87,7 @@
     ): string {
       $Page = '';
       foreach (explode("\n", $templateText_) as $line) {
-        if (Eisodos::$parameterHandler->neq('EditorMode', 'T') // remove line ends starting with comment mark (##)
+        if (Eisodos::$parameterHandler->isOn('EditorMode') // remove line ends starting with comment mark (##)
           and strpos($line, Eisodos::$parameterHandler->getParam('COMMENTMARK', '##')) !== false) {
           $line = substr($line, 0, strpos($line, Eisodos::$parameterHandler->getParam('COMMENTMARK', '##')));
           if ($line === '') {
@@ -97,16 +97,14 @@
         $Page .= (($Page !== '') ? PHP_EOL : '') . $line;
       }
       $Page = Eisodos::$utils->replace_all(
-        Eisodos::$utils->replace_all($Page, '\{', '{', true, true),
+        Eisodos::$utils->replace_all($Page, '\{', '{'),
         '\}',
-        '}',
-        true,
-        true
+        '}'
       );
       if ($variablePrefix_ !== '') {
         $Page = Eisodos::$utils->replace_all($Page, $variablePrefix_, '$');
       }
-      $Page = $this->parse($Page, $listOfValuePairs_, false);
+      $Page = $this->parse($Page, $listOfValuePairs_);
       
       if ($addResultToResponse_ === true) {
         Eisodos::$render->Response .= $Page;
@@ -178,14 +176,14 @@
       if ($templateID_ === '') {
         return '';
       }
-      
-      if (isset($this->_templateCache[$templateID_]) and Eisodos::$parameterHandler->neq('EditorMode', 'T')) {
+  
+      if (isset($this->_templateCache[$templateID_]) and !Eisodos::$parameterHandler->isOn('EditorMode')) {
         $Page = $this->_templateCache[$templateID_];
       }
-      
+  
       if (($disableLanguageTagParsing_ === false)
-        and (Eisodos::$parameterHandler->eq('MULTILANG', 'T', 'F'))
-        and Eisodos::$parameterHandler->neq('EditorMode', 'T')) {
+        and (Eisodos::$parameterHandler->isOn('MULTILANG'))
+        and !Eisodos::$parameterHandler->isOn('EditorMode')) {
         $LangSpec = Eisodos::$parameterHandler->getParam(
             'Lang',
             Eisodos::$parameterHandler->getParam('DEFLANG', 'HU')
@@ -225,7 +223,7 @@
         if (!($file === false)) {
           while (!feof($file)) {
             $line = rtrim(fgets($file));
-            if (Eisodos::$parameterHandler->neq('EditorMode', 'T')
+            if (!Eisodos::$parameterHandler->isOn('EditorMode')
               and strpos($line, Eisodos::$parameterHandler->getParam('COMMENTMARK', '##')) !== false) {
               $line = substr(
                 $line,
@@ -258,18 +256,16 @@
         
         if ($disableParsing_ === false) {
           $Page = Eisodos::$utils->replace_all(
-            Eisodos::$utils->replace_all($Page, '\{', '{', true, true),
+            Eisodos::$utils->replace_all($Page, '\{', '{'),
             '\}',
-            '}',
-            true,
-            true
+            '}'
           );
         }
         
         // hozzaadas cache-hez
         $this->_templateCache[$templateID_] = $Page;
       } elseif ($Page === '') {
-        if (Eisodos::$parameterHandler->eq('SHOWMISSINGTEMPLATE', 'T', 'F')) {
+        if (Eisodos::$parameterHandler->isOn('SHOWMISSINGTEMPLATE')) {
           Eisodos::$render->pageDebugInfo(
             'No template found with name: [' . $LangSpec . $templateID_ . '] (' . $TemplateFile . ')'
           );
@@ -298,7 +294,7 @@
      * @param bool $disableParsing_
      * @return mixed|string
      */
-    public function parse($text_, $listOfValuePairs_ = array(), $disableParsing_ = false) {
+    public function parse(string $text_, $listOfValuePairs_ = array(), $disableParsing_ = false): string {
       $loopCountLimit = (integer)Eisodos::$parameterHandler->getParam('LOOPCOUNT', '1000');
       
       if (!$listOfValuePairs_) {
@@ -370,7 +366,7 @@
      * @param string $match_ Found parameter's name
      * @return float|int
      */
-    private function _getParameterPos($text_, &$match_) {
+    private function _getParameterPos(string $text_, string &$match_) {
       $matches = array();
       if (preg_match('/\$[\w]+/', $text_, $matches, PREG_OFFSET_CAPTURE)) {
         if (isset($match_)) {
@@ -391,7 +387,7 @@
      * @param string $page_ The source string
      * @return string
      */
-    private function _replaceParam($fromPosition_, $paramName_, $page_): string {
+    private function _replaceParam(int $fromPosition_, string $paramName_, string $page_): string {
       $result = $page_;
       $EndPos = $fromPosition_ + strlen($paramName_);                                  // next character position
       if ($EndPos > 0) {
@@ -433,7 +429,7 @@
               -1
             );
           } elseif (strpos($paramName, 'templateabs_') === 0) {
-            if (Eisodos::$parameterHandler->eq('ENABLETEMPLATEABS', 'T', 'F')) {
+            if (Eisodos::$parameterHandler->isOn('ENABLETEMPLATEABS')) {
               $paramValue = $this->getTemplate(
                 Eisodos::$utils->replace_all(
                   Eisodos::$utils->replace_all(
@@ -459,7 +455,7 @@
             }
           } elseif (strpos($paramName, 'callback_') === 0) {
             if (Eisodos::$templateEngine->defaultCallbackFunctionName
-              && Eisodos::$parameterHandler->eq('ENABLEPARAMCALLBACK', 'T', 'F')) {
+              && Eisodos::$parameterHandler->isOn('ENABLEPARAMCALLBACK')) {
               $paramValue =
                 call_user_func(
                   Eisodos::$templateEngine->defaultCallbackFunctionName,
@@ -487,7 +483,7 @@
      * @param string $text_ Text to search for parameters
      * @return string
      */
-    public function replaceParamInString($text_): string {
+    public function replaceParamInString(string $text_): string {
       $loopCountLimit = (integer)Eisodos::$parameterHandler->getParam('LOOPCOUNT', '1000');
       $LoopCount = 0;
       $match = '';
@@ -515,7 +511,7 @@
      * @return Exception|string
      */
     public function getTemplate(
-      $templateID_,
+      string $templateID_,
       $listOfValuePairs_ = array(),
       $addResultToResponse_ = true,
       $disableParsing_ = false,
@@ -524,7 +520,7 @@
       $raiseOnMissingTemplate_ = false
     ) {
       $result = '';
-      if (Eisodos::$parameterHandler->neq('EditorMode', 'T')) {
+      if (!Eisodos::$parameterHandler->isOn('EditorMode')) {
         foreach (Eisodos::$configLoader->getActiveVersions() as $v) {
           $result = $this->_getTemplate(
             $v . $templateID_,

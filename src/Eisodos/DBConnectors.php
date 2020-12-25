@@ -1,10 +1,10 @@
-<?php
+<?php /** @noinspection DuplicatedCode SpellCheckingInspection PhpUnusedFunctionInspection NotOptimalIfConditionsInspection */
   
   namespace Eisodos;
   
   use Eisodos\Abstracts\Singleton;
   use Eisodos\Interfaces\DBConnectorInterface;
-
+  
   /**
    * Eisodos DB Connectors singleton class, usage:
    *
@@ -17,7 +17,7 @@
     /**
      * @inheritDoc
      */
-    public function init($connectorOptions_ = NULL): DBConnectors {
+    public function init($options_ = NULL): DBConnectors {
       return $this;
     }
     
@@ -54,8 +54,8 @@
       if ($index_ === NULL or $index_ === '') {
         return $this->_dbConnectors[0];
       }
-      
-      return $this->_dbConnectors[$index_-1];
+  
+      return $this->_dbConnectors[$index_ - 1];
     }
     
     /**

@@ -1,10 +1,9 @@
-<?php
-  
+<?php /** @noinspection DuplicatedCode SpellCheckingInspection PhpUnusedFunctionInspection NotOptimalIfConditionsInspection */
   
   namespace Eisodos\Parsers;
   
   use Eisodos\Eisodos;
-
+  
   class CallbackFunctionShortParser extends CallbackFunctionParser {
     
     /**
@@ -24,13 +23,13 @@
     /**
      * @inheritDoc
      */
-    public function parse($text_, $blockPosition = false): string {
+    public function parse(string $text_, $blockPosition_ = false): string {
       $closeTagPosition = strpos($text_, '%]');
       $functionBody = '';
       foreach (
         explode(
           ';',
-          substr($text_, $blockPosition + 2, $closeTagPosition - $blockPosition - 2)
+          substr($text_, $blockPosition_ + 2, $closeTagPosition - $blockPosition_ - 2)
         ) as $parameter
       ) {
         $functionBody .= ($functionBody !== '' ? "\n" : '') . $parameter;
@@ -39,7 +38,7 @@
       
       return Eisodos::$utils->replace_all(
         $text_,
-        substr($text_, $blockPosition, $closeTagPosition - $blockPosition + 2),
+        substr($text_, $blockPosition_, $closeTagPosition - $blockPosition_ + 2),
         parent::parse($functionBody, 0),
         false,
         false

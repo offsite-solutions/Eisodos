@@ -1,5 +1,4 @@
-<?php
-  
+<?php /** @noinspection DuplicatedCode SpellCheckingInspection PhpUnusedFunctionInspection NotOptimalIfConditionsInspection */
   
   namespace Eisodos\Interfaces;
   
@@ -16,7 +15,7 @@
      * @param int|bool $blockPosition_ The identified openTag first occurrence in text_
      * @return string The new page after parsing
      */
-    public function parse($text_, $blockPosition_ = false): string;
+    public function parse(string $text_, $blockPosition_ = false): string;
     
     /**
      * Defines the opening tag

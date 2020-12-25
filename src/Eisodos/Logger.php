@@ -1,4 +1,4 @@
-<?php
+<?php /** @noinspection DuplicatedCode SpellCheckingInspection PhpUnusedFunctionInspection NotOptimalIfConditionsInspection */
   
   namespace Eisodos;
   
@@ -13,49 +13,111 @@
   final class Logger extends Singleton implements LoggerInterface {
     
     // Private variables
-    
+    private $debugLog = [];
+  
     /**
-     * @var string $debugLevel Debug level set
+     * @var array $debugLevels Debug level set
      */
-    public $debugLevel = '';
+    private $debugLevels = [];
     /**
      * @var bool $_cliMode script running in CLI mode
      */
     private $_cliMode = false;
-    /**
-     * @var bool|null DebugEnabled
-     */
-    private $debugEnabled = NULL;
-    
+  
     // Public variables
     /**
      * @var int
      */
     private $traceStep = 0;
-    
+  
     // Private functions
+  
+    /**
+     * Generates log file
+     * @param Exception|null $exception_
+     * @param string $debugInformation_
+     * @return string
+     */
+    private function _generateFileLog(?Exception $exception_, $debugInformation_ = ''): string {
+      $st = "\n";
+      $st .= '---------- ' . Eisodos::$applicationName . " ----------\n";
+      $st .= date('Y.m.d. H:i:s') . "\n";
+      if ($exception_) {
+        $st .= $exception_->getMessage() . "\n";
+        $st .= $exception_->getFile() . ' at line ' . $exception_->getLine() . "\n";
+        $st .= $exception_->getTraceAsString() . "\n";
+      }
+      $st .= "----- Extended Error -----\n";
+      $st .= Eisodos::$utils->safe_array_value($_POST, '__EISODOS_extendedError') . "\n";
+      $st .= "----- URL -----\n";
+      if (array_key_exists('REQUEST_URI', $_SERVER)) {
+        $st .= $_SERVER['REQUEST_URI'] . "\n";
+      }
+      $st .= "----- Parameters -----\n";
+      $st .= Eisodos::$parameterHandler->params2log();
+      if ($debugInformation_ !== '') {
+        $st .= "----- Extended info -----\n";
+        $st .= $debugInformation_;
+      }
     
+      return $st;
+    }
+  
+    private function traceStep($text_, &$traceStep_) {
+      switch ($text_) {
+        case 'BEGIN':
+          {
+            return 2 * $traceStep_++;
+          }
+        case 'END':
+          {
+            return 2 * max([0, --$traceStep_]);
+          }
+        default:
+          {
+            return 2 * $traceStep_;
+          }
+      }
+    }
+  
+    // Public functions
+  
     /**
      * Logger initialization
-     * @param mixed $debugLevel_ Comma separated list of levels, ex: critical,error,emergency,debug
+     * @param string $debugLevel_ Comma separated list of levels: error,info,warning,debug,trace,alert,emergency,notice
      */
-    public function init($debugLevel_) {
-      $this->debugLevel = $debugLevel_;
+    public function init($debugLevel_): void {
+      $this->setDebugLevels($debugLevel_);
       $this->_cliMode = (PHP_SAPI === 'cli');
     }
-    
-    // Public functions
-    
+  
+    /** Sets debug level
+     * @param string $debugLevel_ trace,debug,info,notice,alert,warning,error,emergency,critical
+     */
+    public function setDebugLevels($debugLevel_): void {
+      if (!$debugLevel_) {
+        return;
+      }
+      if (strpos($debugLevel_, ',') !== false) {
+        $this->debugLevels = explode(',', $debugLevel_);
+        Eisodos::$parameterHandler->setParam("DebugLevels", $debugLevel_, false, false, 'eisodos::logger');
+      } else {
+        $levels = 'trace,debug,info,notice,alert,warning,error,emergency,critical';
+        $this->debugLevels = explode(',', substr($levels, strpos($levels, $debugLevel_)));
+        Eisodos::$parameterHandler->setParam("DebugLevels", substr($levels, strpos($levels, $debugLevel_)), false, false, 'eisodos::logger');
+      }
+    }
+  
     /**
      * Writes error log to file, mail, screen, callback
      * target can be set in config by ERROROUTPUT=file,mail,screen,"@callback"
      * In CLI Mode screen echos the log to the standard output
-     * @param Exception $exception_ Exception object
+     * @param Exception|NULL $exception_ Exception object
      * @param string $debugInformation_ Extra debug information
      * @param array $extraMails_ Send the debug to the mail address specified
      * @return void
      */
-    public function writeErrorLog($exception_, $debugInformation_ = "", $extraMails_ = array()) {
+    public function writeErrorLog(?Exception $exception_, $debugInformation_ = "", $extraMails_ = array()): void {
       try {
         if (strpos(Eisodos::$parameterHandler->getParam('ERROROUTPUT'), '@') !== false) {
           $errorOutput = Eisodos::$parameterHandler->getParam('ERROROUTPUT') . ',';
@@ -64,7 +126,7 @@
           $error_function(
             $this,
             array(
-              'Message' => $exception_->getMessage() . "\n" . Eisodos::$utils->safe_array_value(
+              'Message' => ($exception_ ? $exception_->getMessage() . "\n" : '') . Eisodos::$utils->safe_array_value(
                   $_POST,
                   '__EISODOS_extendedError'
                 ),
@@ -79,7 +141,10 @@
       } catch (Exception $e) {
         Eisodos::$parameterHandler->setParam(
           'ERROROUTPUT',
-          Eisodos::$parameterHandler->getParam('ERROROUTPUT') . ',Mail'
+          Eisodos::$parameterHandler->getParam('ERROROUTPUT') . ',Mail',
+          false,
+          false,
+          'eisodos::logger'
         );
       }
       
@@ -90,14 +155,17 @@
           $logfile = fopen(
             Eisodos::$templateEngine->replaceParamInString(Eisodos::$parameterHandler->getParam('ERRORLOG')),
             'ab'
-          ) or die("can't open log file (".Eisodos::$templateEngine->replaceParamInString(Eisodos::$parameterHandler->getParam('ERRORLOG')).")");
+          ) or die("can't open log file (" . Eisodos::$templateEngine->replaceParamInString(Eisodos::$parameterHandler->getParam('ERRORLOG')) . ")");
           fwrite($logfile, $errorString);
           fclose($logfile);
         }
       } catch (Exception $ex) {
         Eisodos::$parameterHandler->setParam(
           'ERROROUTPUT',
-          Eisodos::$parameterHandler->getParam('ERROROUTPUT') . ',Mail'
+          Eisodos::$parameterHandler->getParam('ERROROUTPUT') . ',Mail',
+          false,
+          false,
+          'eisodos::logger'
         );
       }
       
@@ -140,61 +208,16 @@
     }
     
     /**
-     * Generates log file
-     * @param Exception|null $exception_
-     * @param string $debugInformation_
-     * @return string
-     */
-    private function _generateFileLog($exception_, $debugInformation_ = ''): string {
-      $st = "\n";
-      $st .= '---------- ' . Eisodos::$applicationName . " ----------\n";
-      $st .= date('Y.m.d. H:i:s') . "\n";
-      if ($exception_) {
-        $st .= $exception_->getMessage() . "\n";
-        $st .= $exception_->getFile() . ' at line ' . $exception_->getLine() . "\n";
-        $st .= $exception_->getTraceAsString() . "\n";
-      }
-      $st .= "     ----- Extended Error -----\n";
-      $st .= Eisodos::$utils->safe_array_value($_POST, '__EISODOS_extendedError') . "\n";
-      $st .= "     ----- URL -----\n";
-      if (array_key_exists('REQUEST_URI', $_SERVER)) {
-        $st .= $_SERVER['REQUEST_URI'] . "\n";
-      }
-      $st .= "     ----- Parameters -----\n";
-      $st .= Eisodos::$parameterHandler->params2log();
-      if ($debugInformation_ !== '') {
-        $st .= "     ----- Extended info -----\n";
-        $st .= $debugInformation_;
-      }
-      
-      return $st;
-    }
-    
-    /**
-     * Log a critical message
-     *
-     * @param string $text_ Message to be displayed in the log message
-     * @param object $sender_ Sender object. When specified debug will display the name of the sender object. Defaults to `null`.
-     */
-    public function critical($text_, $sender_ = NULL): void {
-      $this->log($text_, 'critical', $sender_);
-    }
-    
-    /**
      * Adds debug message to PhpConsole or in CLI Mode to the standard output
      * @param string $text_ Message
      * @param string $debugLevel_ Debug level 'critical','error','info','warning','debug','trace','emergency','alert','notice'
      * @param object|null $sender_ Sender object
      */
     public function log($text_, $debugLevel_ = 'debug', $sender_ = NULL): void {
-      if ($this->debugEnabled === NULL) {
-        $d = explode(',', $this->debugLevel);
-        $this->debugEnabled = (in_array('trace', $d, true) or in_array($debugLevel_, $d, true));
-      }
-      
-      if ($this->debugEnabled) {
+  
+      if (in_array($debugLevel_, $this->debugLevels, false)) {
         $dbt = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3);
-        
+    
         if (array_key_exists(2, $dbt)) {
           $functionName = Eisodos::$utils->safe_array_value($dbt[2], 'function');
           $className = Eisodos::$utils->safe_array_value($dbt[2], 'class');
@@ -219,36 +242,31 @@
             ' ',
             $this->traceStep($text_, $this->traceStep)
           ) . $text_;
-        
+    
         if ($this->_cliMode) {
           echo($debugText . PHP_EOL);
+        } else if (class_exists('PC', false)) {
+          PC::debug($debugText);
         } else {
-          if (class_exists('PC', false)) {
-            PC::debug($debugText);
-          } else {
-            // TODO gyujteni amig nincs objektum
-          }
+          $this->debugLog[] = $debugText;
         }
       }
     }
-    
-    private function traceStep($text_, &$traceStep_) {
-      switch ($text_) {
-        case 'BEGIN':
-          {
-            return 2 * $traceStep_++;
-          }
-        case 'END':
-          {
-            return 2 * --$traceStep_;
-          }
-        default:
-          {
-            return 2 * $traceStep_;
-          }
-      }
+  
+    public function getDebugLog(): array {
+      return $this->debugLog;
     }
-    
+  
+    /**
+     * Log a critical message
+     *
+     * @param string $text_ Message to be displayed in the log message
+     * @param null $sender_ Sender object. When specified debug will display the name of the sender object. Defaults to `null`.
+     */
+    public function critical($text_, $sender_ = NULL): void {
+      $this->log($text_, 'critical', $sender_);
+    }
+  
     /**
      * Log an error message
      *

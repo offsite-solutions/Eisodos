@@ -1,4 +1,4 @@
-<?php /** @noinspection DuplicatedCode */
+<?php /** @noinspection DuplicatedCode SpellCheckingInspection PhpUnusedFunctionInspection NotOptimalIfConditionsInspection */
   
   namespace Eisodos;
   
@@ -33,13 +33,13 @@
     private $_pageDebugInfo = '';
     
     // Private functions
-    
+  
     /**
      * Render initialization
-     * @param array $renderOptions_
+     * @param array $options_
      * @return Singleton|void
      */
-    public function init($renderOptions_ = []): Singleton {
+    public function init($options_ = []): Singleton {
     }
     
     /**
@@ -77,7 +77,7 @@
      * @throws Exception
      */
     public function start(
-      $configOptions_,
+      array $configOptions_,
       $cacheOptions_ = [],
       $templateEngineOptions_ = [],
       $debugLevel_ = 'error'
@@ -86,55 +86,78 @@
       if (!Eisodos::$applicationName) {
         die('Application name is missing');
       }
-      
+  
       Eisodos::$logger->init($debugLevel_);
       Eisodos::$logger->trace('BEGIN', $this);
-      
+  
       ob_start();
-      
+  
       Eisodos::$configLoader->init($configOptions_);
+      // override initial errorlevel from configuration
+      Eisodos::$logger->setDebugLevels(Eisodos::$parameterHandler->getParam('DebugLevel', ''));
       Eisodos::$mailer->init();
       Eisodos::$translator->init();
       Eisodos::$parameterHandler->init();
-      
+  
       Eisodos::$logger->trace('Objects initialized', $this);
-      
+  
       if (Eisodos::$parameterHandler->getParam('DEBUGGERSTORAGE') !== '') {
         PhpConsole\Connector::setPostponeStorage(
           new PhpConsole\Storage\File(Eisodos::$parameterHandler->getParam('DEBUGGERSTORAGE'))
         );
       }
+  
+      // check if URL contains debugparameters
+      if (($debugURLPrefix = Eisodos::$parameterHandler->getParam("DEBUGURLPREFIX", "")) !== ''
+        && (Eisodos::$parameterHandler->neq("SessionDebugLevel", "") || Eisodos::$parameterHandler->neq($debugURLPrefix . "DebugLevel", ""))) {
+    
+        $debugLevel = Eisodos::$parameterHandler->getParam($debugURLPrefix . "DebugLevel", Eisodos::$parameterHandler->getParam("SessionDebugLevel"));
+        Eisodos::$parameterHandler->setParam("SessionDebugLevel", $debugLevel, true, false, 'eisodos::render');
+        Eisodos::$logger->setDebugLevels(Eisodos::$parameterHandler->getParam("SessionDebugLevel", Eisodos::$parameterHandler->getParam("DEBUGLEVELS")));
+        if ($debugLevel !== '') {
+          Eisodos::$parameterHandler->setParam("DEBUGEXCEPTIONS", "T", false, false, 'eisodos::render');
+          Eisodos::$parameterHandler->setParam("DEBUGMESSAGES", "T", false, false, 'eisodos::render');
+          Eisodos::$parameterHandler->setParam("DEBUGERRORS", "T", false, false, 'eisodos::render');
+        }
+      }
+  
       $debugger = PhpConsole\Helper::register();
       $handler = PC::getHandler();
-      if (isset($handler) && isset($debugger)) {
-        $handler->setHandleErrors(Eisodos::$parameterHandler->eq('DEBUGERRORS', 'T'));
-        $handler->setHandleExceptions(Eisodos::$parameterHandler->eq('DEBUGEXCEPTIONS', 'T'));
+      if (isset($handler, $debugger)) {
+        $handler->setHandleErrors(Eisodos::$parameterHandler->isOn('DEBUGERRORS'));
+        $handler->setHandleExceptions(Eisodos::$parameterHandler->isOn('DEBUGEXCEPTIONS'));
         $debugger->setSourcesBasePath($_SERVER['DOCUMENT_ROOT']);
         if (Eisodos::$parameterHandler->neq('DEBUGPASSWORD', '')) {
           $debugger->setPassword(Eisodos::$parameterHandler->getParam('DEBUGPASSWORD'));
         }
         $handler->start();
-        if (!$debugger->isActiveClient() or !(Eisodos::$parameterHandler->eq('DEBUGMESSAGES', 'T'))) {
+        if (!$debugger->isActiveClient() || !(Eisodos::$parameterHandler->isOn('DEBUGMESSAGES'))) {
           $debugger->setAllowedIpMasks(array('0.0.0.0'));
+        }
+        foreach (Eisodos::$logger->getDebugLog() as $debugText) {
+          PC::debug($debugText);
         }
       }
       
       Eisodos::$logger->trace('PhpConsole initialized', $this);
-      
+  
       if (Eisodos::$utils->safe_array_value($cacheOptions_, 'disableHTMLCache', false)
-        or Eisodos::$parameterHandler->eq('ALWAYSNOCACHE', 'T')) {
+        || Eisodos::$parameterHandler->isOn('ALWAYSNOCACHE')) {
         header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
         header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
         header('Cache-Control: no-store, no-cache, must-revalidate');
         header('Cache-Control: post-check=0, pre-check=0', false);
         header('Pragma: no-cache');
       }
-      
-      Eisodos::$parameterHandler->setParam('CGI', $_SERVER['PHP_SELF']);
+  
+      Eisodos::$parameterHandler->setParam('.CGI', $_SERVER['PHP_SELF'], false, false, 'eisodos::render');
       Eisodos::$parameterHandler->setParam(
         'IsAJAXRequest',
         (!empty($_SERVER['HTTP_X_REQUESTED_WITH'])
-          and strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') ? 'T' : 'F'
+          and strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') ? 'T' : 'F',
+        false,
+        false,
+        'eisodos::render'
       );
       
       if (Eisodos::$parameterHandler->neq('ERROROUTPUT', '')) {
@@ -142,7 +165,7 @@
       }
       
       // check service mode
-      if (Eisodos::$parameterHandler->neq('__SERVICEMODE', '')) {
+      if (Eisodos::$parameterHandler->isOn('__SERVICEMODE')) {
         header('HTTP/1.1 503 Service Temporarily Unavailable');
         header('Status: 503 Service Temporarily Unavailable');
         header('Retry-After: 300');
@@ -159,7 +182,7 @@
      * @param string $parameterName_ Parameter's name
      */
     public function storeCurrentURL($parameterName_): void {
-      Eisodos::$parameterHandler->setParam($parameterName_, $this->currentPageURL(), true);
+      Eisodos::$parameterHandler->setParam($parameterName_, $this->currentPageURL(), true, false, 'eisodos::render');
     }
     
     /**
@@ -170,12 +193,8 @@
       function strleft($s1, $s2) {
         return substr($s1, 0, strpos($s1, $s2));
       }
-      
-      if (!isset($_SERVER['REQUEST_URI'])) {
-        $serverrequri = $_SERVER['PHP_SELF'];
-      } else {
-        $serverrequri = $_SERVER['REQUEST_URI'];
-      }
+  
+      $serverrequri = $_SERVER['REQUEST_URI'] ?? $_SERVER['PHP_SELF'];
       
       $protocol = strleft(
           strtolower($_SERVER['SERVER_PROTOCOL']),
@@ -209,9 +228,9 @@
      * Finish page generation and generate the page
      */
     public function finish(): void {
-      Eisodos::$parameterHandler->finish(true);
+      Eisodos::$parameterHandler->finish();
       if (ob_get_level() > 0) {
-        $this->_generatePage(false);
+        $this->_generatePage();
       }  // if page cached, create response
       session_write_close();
       Eisodos::$translator->finish();
@@ -224,15 +243,15 @@
      */
     private function _generatePage($rawResponse_ = false): void {
       if (Eisodos::$parameterHandler->neq('Redirect', '')
-        or Eisodos::$parameterHandler->neq('PageExpires', '')) {
+        || Eisodos::$parameterHandler->neq('PageExpires', '')) {
         ob_end_clean();
-        
+    
         header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
         header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
         header('Cache-Control: no-store, no-cache, must-revalidate');
         header('Cache-Control: post-check=0, pre-check=0', false);
         header('Pragma: no-cache');
-        
+    
         if (Eisodos::$parameterHandler->neq('Redirect', '')) {
           header('Location: ' . Eisodos::$parameterHandler->getParam('Redirect'));
           
@@ -247,10 +266,10 @@
       
       if (!$rawResponse_) {
         $this->Response = Eisodos::$templateEngine->replaceParamInString($this->_changeEncode($this->Response));
-        
-        if (Eisodos::$parameterHandler->neq('EditorMode', 'T')) {
+  
+        if (!Eisodos::$parameterHandler->isOn('EditorMode')) {
           $this->Response = Eisodos::$utils->replace_all($this->Response, '_dollar_', '$', true, false);
-          if (Eisodos::$parameterHandler->neq('DISABLECURLYBRACESREPLACE', 'T')) {
+          if (!Eisodos::$parameterHandler->isOn('DISABLECURLYBRACESREPLACE')) {
             $this->Response = Eisodos::$utils->replace_all($this->Response, '{{', '[', true, false);
             $this->Response = Eisodos::$utils->replace_all($this->Response, '}}', ']', true, false);
           }
@@ -277,8 +296,8 @@
         if ($this->_pageDebugInfo !== '') {
           $this->Response .= '<!-- ' . $this->_pageDebugInfo . '-->' . "\n";
         }
-        
-        if (Eisodos::$parameterHandler->eq('INCLUDESTATISTIC', 'T') and // ajax-nal ne rakja bele
+  
+        if (Eisodos::$parameterHandler->isOn('INCLUDESTATISTIC') and // ajax-nal ne rakja bele
           !(!empty($_SERVER['HTTP_X_REQUESTED_WITH']) and
             strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')) {
           $unit = array('B', 'KB', 'MB', 'GB', 'TB', 'PB');
@@ -292,8 +311,8 @@
                 2
               ) . ' ' . $unit[$i]) . '), Execution time: ' . bcsub($b_string, $a_string) . ' -->' . "\n";
         }
-        
-        if (Eisodos::$parameterHandler->eq('SavePageToDisk', 'T')
+  
+        if (Eisodos::$parameterHandler->isOn('SavePageToDisk')
           and Eisodos::$parameterHandler->neq(Eisodos::$parameterHandler->getParam('SaveFileName'), '')) {
           $f = fopen('SaveFile' . Eisodos::$parameterHandler->getParam('SaveFileName'), 'wb');
           fwrite($f, $this->Response);
@@ -331,21 +350,21 @@
     }
     
     private function _makeTitle(): void {
-      function everything_in_tags($string, $tagname) {
+      function everything_in_tags($string, $tagname): string {
         $pattern = "#<\s*?$tagname\b[^>]*>(.*?)</$tagname\b[^>]*>#s";
         if (preg_match($pattern, $string, $matches)) {
           return $matches[1];
         }
-        
+    
         return '';
       }
-      
-      if (Eisodos::$parameterHandler->neq('TITLESTRING', '') and Eisodos::$parameterHandler->neq('EditorMode', 'T')) {
+  
+      if (Eisodos::$parameterHandler->neq('TITLESTRING', '') and !Eisodos::$parameterHandler->isOn('EditorMode')) {
         $title = '';
         if (Eisodos::$parameterHandler->neq('TITLEREPLACETAG', '')) {
           $title = everything_in_tags($this->Response, Eisodos::$parameterHandler->getParam('TITLEREPLACETAG'));
         } else {
-          $a = strpos(Eisodos::$parameterHandler->getParam('TITLEREPLACE'), $this->Response);
+          $a = @strpos(Eisodos::$parameterHandler->getParam('TITLEREPLACE'), $this->Response);
           if ($a !== false) {
             $a += strlen(Eisodos::$parameterHandler->getParam('TITLEREPLACE'));
             $b = strpos(
@@ -359,7 +378,7 @@
               $this->Response
             );
             $title = substr($this->Response, $a, $b - $a);
-            if (Eisodos::$parameterHandler->eq('TITLECUT', 'T')) {
+            if (Eisodos::$parameterHandler->isOn('TITLECUT')) {
               if (strpos('<', $title) !== false) {
                 $title = substr($title, 0, strpos('<', $title) - 1);
               }
@@ -382,7 +401,7 @@
         }
         
         if ($title !== '') {
-          if (Eisodos::$parameterHandler->eq('TITLECONCAT', 'T')) {
+          if (Eisodos::$parameterHandler->isOn('TITLECONCAT')) {
             $title .= ' - ' . Eisodos::$parameterHandler->getParam(
                 'TITLEEMPTY' . Eisodos::$parameterHandler->getParam(
                   'Lang',
@@ -441,12 +460,9 @@
           );
         }
       }
-      
-      if (Eisodos::$parameterHandler->neq('DESCRIPTIONSTRING', '') and Eisodos::$parameterHandler->neq(
-          'EditorMode',
-          'T'
-        )) {
-        $a = strpos(Eisodos::$parameterHandler->getParam('DESCRIPTIONREPLACE'), $this->Response);
+  
+      if (Eisodos::$parameterHandler->neq('DESCRIPTIONSTRING', '') and !Eisodos::$parameterHandler->isOn('EditorMode')) {
+        $a = @strpos(Eisodos::$parameterHandler->getParam('DESCRIPTIONREPLACE'), $this->Response);
         if ($a !== false) {
           $a += strlen(Eisodos::$parameterHandler->getParam('DESCRIPTIONREPLACE'));
           $b = strpos(

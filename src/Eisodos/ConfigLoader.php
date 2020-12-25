@@ -1,16 +1,15 @@
-<?php
+<?php /** @noinspection DuplicatedCode SpellCheckingInspection PhpUnusedFunctionInspection NotOptimalIfConditionsInspection */
   
   namespace Eisodos;
   
   use Eisodos\Abstracts\Singleton;
   use Exception;
   use PC;
-
+  
   /*
-   * TODO: (normal) load and keep config.section into session and prevent re-parsing every time (mark section session) [test:session,...]
-   * TODO: (critical) protect config values by overwritten from HTTP request parameters (mark section writeable [test:writable,...])
    * TODO: (low) config file editor
    * TODO: (critical) same handling of INI type's (T,"true",F,"false",empty) and JSON type's (true,false,null) values
+   * TODO: (normal) implement config cache
    */
   
   /**
@@ -27,17 +26,17 @@
     /**
      * @var string $_activeVersionsString List of active versions
      */
-    private $_activeVersionsString = '';
+    private string $_activeVersionsString = '';
     
     /**
      * @var array $_configCache Multidimensional array cache for faster loading [configFile][section][key]=value
      */
-    private $_configCache = [];
+    private array $_configCache = [];
     
     /**
      * @var string $_environment Environment prefix for config files
      */
-    private $_environment = '';
+    private string $_environment = '';
     
     /**
      * @var mixed|string $_configPath Config file's path
@@ -47,16 +46,16 @@
     /**
      * @var int $_configType Format of configurations file
      */
-    private $_configType = self::CONFIG_TYPE_INI;
+    private int $_configType = self::CONFIG_TYPE_INI;
     
     /**
      * @var array
      */
-    private $_activeVersions;
-    
+    private array $_activeVersions;
+  
     /**
      * ConfigLoader initializer
-     * @param array $configOptions_ =[
+     * @param array $options_ =[
      *     'configPath' => './config', // Configuration file's path
      *     'configType' => ConfigLoader::CONFIG_TYPE_INI,
      *     'environment' => '',        // environment variable
@@ -67,17 +66,17 @@
      * @return void
      */
     public function init(
-      $configOptions_ = []
+      $options_ = []
     ): void {
       Eisodos::$logger->trace('BEGIN', $this);
       
       // setting default config options values
       $this->_configPath = Eisodos::$utils->safe_array_value(
-        $configOptions_,
+        $options_,
         'configPath',
         Eisodos::$parameterHandler->getParam('_applicationDir') . '/config'
       );
-      $this->_configType = Eisodos::$utils->safe_array_value($configOptions_, 'configType', self::CONFIG_TYPE_INI);
+      $this->_configType = Eisodos::$utils->safe_array_value($options_, 'configType', self::CONFIG_TYPE_INI);
       
       // setting environment variable
       // it must be
@@ -86,11 +85,11 @@
       //   or it can be set by in config options
       if (file_exists($this->_configPath . '/environment')) {
         $this->_environment = trim(file_get_contents($this->_configPath . '/environment')) . '-';
-      } elseif (array_key_exists('environment', $configOptions_)) {
-        $this->_environment = $configOptions_['environment'] . '-';
+      } elseif (array_key_exists('environment', $options_)) {
+        $this->_environment = $options_['environment'] . '-';
       } else {
         $this->_environment = getenv(Eisodos::$applicationName . '_ENVIRONMENT');
-        if ($this->_environment === false) {
+        if ($this->_environment === false || $this->_environment == '') {
           $this->_environment = '';
         } else {
           $this->_environment .= '-';
@@ -98,7 +97,7 @@
       }
       
       // add to global variables, cutting down the '-' sign
-      Eisodos::$parameterHandler->setParam('_environment', substr($this->_environment, -1));
+      Eisodos::$parameterHandler->setParam('_environment', substr($this->_environment, -1), false, false, 'eisodos::configLoader');
       
       if (!file_exists(
         $this->_configPath . '/' . $this->_environment .
@@ -120,7 +119,7 @@
       
       // loading configuration
       $this->_loadMainConfiguration(
-        array_key_exists('overwrites', $configOptions_) ? $configOptions_['overwrites'] : []
+        array_key_exists('overwrites', $options_) ? $options_['overwrites'] : []
       );
       
       Eisodos::$logger->trace('END', $this);
@@ -150,24 +149,23 @@
         }
       }
     }
-    
+  
     /**
      * Loads configuration file values to an array
      * @param string $section_ Section
      * @param array &$array_ Array of options
      * @param string $configFile_ Configuration file's name
+     * @return string|bool
      */
-    private function _readSection($section_, &$array_ = array(), $configFile_ = ''): void {
-      // Eisodos::trace('BEGIN',$this);
-      
+    private function _readSection(string $section_, &$array_ = array(), $configFile_ = ''): string {
       if ($section_ === '') {
-        return;
+        return false;
       }
-      
+    
       $section_ = strtolower($section_);
       $comment = '#';
       $group = '';
-      
+    
       $extension = $this->_getExtension();
       
       /*
@@ -187,10 +185,8 @@
       } elseif (file_exists($this->_configPath . DIRECTORY_SEPARATOR . $configFile_)) {
         $configFile = $this->_configPath . DIRECTORY_SEPARATOR . $configFile_;
       } else {
-        return;
+        return false;
       }
-      
-      // Eisodos::trace($configfile.' ['.$section_.']',$this);
       
       // check if config file already in the cache
       if (array_key_exists($configFile, $this->_configCache)
@@ -240,8 +236,13 @@
         } catch (Exception $e) {
         }
       }
-      // Eisodos::trace('END',$this);
-      
+    
+      $source = basename($configFile) . ':' . $section_;
+      $listOfConfigFiles = Eisodos::$parameterHandler->getParam('ConfigFiles');
+      Eisodos::$parameterHandler->setParam(
+        'ConfigFiles', $listOfConfigFiles . ($listOfConfigFiles === '' ? '' : ';') . $source, false, false, 'eisodos::configLoader');
+    
+      return $source;
     }
     
     // Public functions
@@ -274,7 +275,10 @@
       $this->_activeVersionsString = Eisodos::$utils->safe_array_value($Versions, 'activeversions');
       Eisodos::$parameterHandler->setParam(
         'TemplateVersionAlert',
-        Eisodos::$utils->safe_array_value($Versions, 'templateversionalert')
+        Eisodos::$utils->safe_array_value($Versions, 'templateversionalert'),
+        false,
+        false,
+        'eisodos::configLoader'
       );
       
       // loading version sections in reverse order
@@ -288,17 +292,19 @@
       $this->_readSection('PostInclude', $PostInclude);
       foreach ($PostInclude as $n => $v) {
         $x = explode(':', $v);
-        $this->importConfigSection($x[1], $x[0]);
+        if (count($x) > 1 and $x[1] !== '') {
+          $this->importConfigSection($x[1], $x[0]);
+        }
       }
       
       // overwrite config values set in constructor
       foreach ($configOverwrites_ as $key => $value) {
-        Eisodos::$parameterHandler->setParam($key, $value);
+        Eisodos::$parameterHandler->setParam($key, $value, false, false, 'ConfigOverwrite');
       }
-      
+  
       Eisodos::$logger->trace('END', $this);
     }
-    
+  
     /**
      * Loads configuration file's section to the parameters array
      * @param string $section_ Section of the configuration file [SECTION_NAME]
@@ -306,25 +312,31 @@
      * @param bool $addToParameters_ If true, read section keyes will be added to the global parameter list
      * @return array Read and parsed key-value pairs
      */
-    public function importConfigSection($section_, $configFile_ = '', $addToParameters_ = true): array {
+    public
+    function importConfigSection(string $section_, $configFile_ = '', $addToParameters_ = true): array {
       $L = array();
-      $this->_readSection($section_, $L, $configFile_);
+      $source = $this->_readSection($section_, $L, $configFile_);
       foreach ($L as $key => $val) {
         // add imported key values to the parameterHandler by replacing variables in the values
-        $val = strpos($val, '$') !== false ? Eisodos::$templateEngine->replaceParamInString($val) : $val;
+        $val = (strpos($val, '$') !== false ? Eisodos::$templateEngine->replaceParamInString($val) : $val);
+        // if key starts with a minus, then make it readonly
         if ($addToParameters_) {
           Eisodos::$parameterHandler->setParam(
             $key,
-            $val
+            $val,
+            false,
+            false,
+            $source
           );
         }
         $L[$key] = $val;
       }
-      
+    
       return $L;
     }
-    
-    public function initVersioning($developerVersion_): void {
+  
+    public
+    function initVersioning($developerVersion_): void {
       if ($developerVersion_ !== '') {
         $this->importConfigSection(
           $developerVersion_
@@ -332,19 +344,20 @@
         $this->_activeVersionsString = $developerVersion_ . ($this->_activeVersionsString === '' ? '' : ',') . $this->_activeVersionsString;  // hozzafuzes az activeversionhoz
       }
       $this->_activeVersionsString .= ',';
-      
+    
       $this->_activeVersions = explode(',', $this->_activeVersionsString);
-      
+    
       // _activeVersions array contains the version prefixes, ex: v3., v2., empty
-      Eisodos::$parameterHandler->setParam('AppVersion', $this->_activeVersions[0]);
+      Eisodos::$parameterHandler->setParam('AppVersion', $this->_activeVersions[0], false, false, 'eisodos::configLoader');
       foreach ($this->_activeVersions as &$row) {
         if ($row) {
           $row .= '.';
         }
       }
     }
-    
-    public function loadParameterFilters(&$parameterFilters_): void {
+  
+    public
+    function loadParameterFilters(&$parameterFilters_): void {
       $parameterFilterFilename = '';
       if (file_exists(
         $this->_configPath .
@@ -357,13 +370,14 @@
       } elseif (file_exists($this->_configPath . DIRECTORY_SEPARATOR . Eisodos::$applicationName . '.params')) {
         $parameterFilterFilename = $this->_configPath . DIRECTORY_SEPARATOR . Eisodos::$applicationName . '.params';
       }
-      
+    
       if ($parameterFilterFilename !== '') {
         $parameterFilters_ = explode("\n", file_get_contents($parameterFilterFilename));
       }
     }
-    
-    public function getActiveVersions(): array {
+  
+    public
+    function getActiveVersions(): array {
       return $this->_activeVersions;
     }
   }

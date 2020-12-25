@@ -1,5 +1,4 @@
-<?php
-  
+<?php /** @noinspection DuplicatedCode SpellCheckingInspection PhpUnusedFunctionInspection NotOptimalIfConditionsInspection */
   
   namespace Eisodos\Parsers;
   
@@ -7,7 +6,7 @@
   use Eisodos\Interfaces\ParserInterface;
   use Exception;
   use RuntimeException;
-
+  
   class CallbackFunctionParser implements ParserInterface {
     
     /**
@@ -27,7 +26,7 @@
     /**
      * @inheritDoc
      */
-    public function parse($text_, $blockPosition = false): string {
+    public function parse(string $text_, $blockPosition_ = false): string {
       $orig = '';
       try {
         $structure = substr($text_, strpos($text_, '<%') + 2);

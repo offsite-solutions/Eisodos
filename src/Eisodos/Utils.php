@@ -1,13 +1,13 @@
-<?php
+<?php /** @noinspection DuplicatedCode SpellCheckingInspection PhpUnusedFunctionInspection NotOptimalIfConditionsInspection */
   
   namespace Eisodos;
   
   use Eisodos\Abstracts\Singleton;
   use Exception;
-
+  
   class Utils extends Singleton {
     
-    public function safe_array_value($array_, $key_, $defaultValue_ = '') {
+    public function safe_array_value($array_, $key_, $defaultValue_ = ''): string {
       if (isset($array_) and array_key_exists($key_, $array_)) {
         if ($array_[$key_] === '') {
           return $defaultValue_;
@@ -92,7 +92,7 @@
      * @param array $listOfValuePairs_
      * @return mixed|string
      */
-    public function ODecode($listOfValuePairs_ = array()) {
+    public function ODecode($listOfValuePairs_ = array()): string {
       if (count($listOfValuePairs_) % 2 !== 0) {
         $listOfValuePairs_[] = '';
       }
@@ -112,9 +112,7 @@
         return $this->replace_all(
           $listOfValuePairs_[$count - 1],
           '$0',
-          $listOfValuePairs_[0],
-          true,
-          true
+          $listOfValuePairs_[0]
         );
       }
       

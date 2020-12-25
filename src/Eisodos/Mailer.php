@@ -1,4 +1,4 @@
-<?php /** @noinspection DuplicatedCode */
+<?php /** @noinspection DuplicatedCode SpellCheckingInspection PhpUnusedFunctionInspection NotOptimalIfConditionsInspection */
   
   namespace Eisodos;
   
@@ -23,7 +23,7 @@
      * Mailer initializer
      * @inheritDoc
      */
-    public function init($mailerOptions_ = []
+    public function init($options_ = []
     ): void {
     }
     
@@ -35,7 +35,7 @@
      * @param string $from_
      * @return bool|string
      */
-    public function utf8_html_mail($to_, $subject_, $body_, $from_) {
+    public function utf8_html_mail(string $to_, string $subject_, string $body_, string $from_) {
       try {
         $message = new Mail_mime(
           array(
@@ -44,7 +44,7 @@
             'eol' => "\n"
           )
         );
-        
+      
         $message->setHTMLBody($body_);
         $extraHeaders = array(
           'From' => $from_,
@@ -56,11 +56,11 @@
         $headers = $message->headers($extraHeaders);
         
         if (Eisodos::$parameterHandler->neq("SMTP.Host", "")) {
-          $SMTPOptions = array('host' => Eisodos::$parameterHandler->getParam("SMTP.Host", ""),
+          $SMTPOptions = array('host' => Eisodos::$parameterHandler->getParam("SMTP.Host"),
             'auth' => Eisodos::$parameterHandler->neq("SMTP.Username", ""),
-            'port' => Eisodos::$parameterHandler->getParam("SMTP.Port", ""),
-            'username' => Eisodos::$parameterHandler->getParam("SMTP.Username", ""),
-            'password' => Eisodos::$parameterHandler->getParam("SMTP.Password", ""));
+            'port' => Eisodos::$parameterHandler->getParam("SMTP.Port"),
+            'username' => Eisodos::$parameterHandler->getParam("SMTP.Username"),
+            'password' => Eisodos::$parameterHandler->getParam("SMTP.Password"));
           $mail = Mail::factory("smtp", $SMTPOptions);
         } else {
           $mail = Mail::factory("mail");
@@ -96,7 +96,7 @@
      * @param string $from_
      * @param array $filesToAttach_
      */
-    public function utf8_html_mail_attachment($to_, $subject_, $body_, $from_, $filesToAttach_ = array()): void {
+    public function utf8_html_mail_attachment(string $to_, string $subject_, string $body_, string $from_, $filesToAttach_ = array()): void {
       try {
         $message = new Mail_mime(
           array(
@@ -105,7 +105,7 @@
             'eol' => "\n"
           )
         );
-        
+      
         $message->setHTMLBody($body_);
         foreach ($filesToAttach_ as $f) {
           $message->addAttachment($f);
@@ -120,11 +120,11 @@
         $headers = $message->headers($extraHeaders);
         
         if (Eisodos::$parameterHandler->neq("SMTP.Host", "")) {
-          $SMTPOptions = array('host' => Eisodos::$parameterHandler->getParam("SMTP.Host", ""),
+          $SMTPOptions = array('host' => Eisodos::$parameterHandler->getParam("SMTP.Host"),
             'auth' => Eisodos::$parameterHandler->neq("SMTP.Username", ""),
-            'port' => Eisodos::$parameterHandler->getParam("SMTP.Port", ""),
-            'username' => Eisodos::$parameterHandler->getParam("SMTP.Username", ""),
-            'password' => Eisodos::$parameterHandler->getParam("SMTP.Password", ""));
+            'port' => Eisodos::$parameterHandler->getParam("SMTP.Port"),
+            'username' => Eisodos::$parameterHandler->getParam("SMTP.Username"),
+            'password' => Eisodos::$parameterHandler->getParam("SMTP.Password"));
           $mail = Mail::factory("smtp", $SMTPOptions);
         } else {
           $mail = Mail::factory("mail");
@@ -161,10 +161,10 @@
      */
     public function utf8_html_mail_params_attachment_batch(
       TemplateEngine $templateEngine_,
-      $to_,
-      $subject_,
-      $bodyTemplate_,
-      $from_,
+      array $to_,
+      string $subject_,
+      string $bodyTemplate_,
+      string $from_,
       $filesToAttach_ = array(),
       $batch_loopCount_ = 50,
       $batch_waitBetweenLoops_ = 60,
@@ -208,7 +208,7 @@
           $params = explode("\n", $paramstext);
           foreach ($params as $line) {
             $pieces = explode('=', $line, 2);
-            Eisodos::$parameterHandler->setParam($pieces[0], $pieces[1]);
+            Eisodos::$parameterHandler->setParam($pieces[0], $pieces[1], false, false, 'eisodos::mailer');
           }
           
           $message->setHTMLBody($templateEngine_->getTemplate($bodyTemplate_, array(), false));
@@ -226,11 +226,11 @@
           $headers = $message->headers($extraHeaders);
           
           if (Eisodos::$parameterHandler->neq("SMTP.Host", "")) {
-            $SMTPOptions = array('host' => Eisodos::$parameterHandler->getParam("SMTP.Host", ""),
+            $SMTPOptions = array('host' => Eisodos::$parameterHandler->getParam("SMTP.Host"),
               'auth' => Eisodos::$parameterHandler->neq("SMTP.Username", ""),
-              'port' => Eisodos::$parameterHandler->getParam("SMTP.Port", ""),
-              'username' => Eisodos::$parameterHandler->getParam("SMTP.Username", ""),
-              'password' => Eisodos::$parameterHandler->getParam("SMTP.Password", ""));
+              'port' => Eisodos::$parameterHandler->getParam("SMTP.Port"),
+              'username' => Eisodos::$parameterHandler->getParam("SMTP.Username"),
+              'password' => Eisodos::$parameterHandler->getParam("SMTP.Password"));
             $mail = Mail::factory("smtp", $SMTPOptions);
           } else {
             $mail = Mail::factory("mail");

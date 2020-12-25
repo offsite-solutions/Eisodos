@@ -1,10 +1,9 @@
-<?php
-  
+<?php /** @noinspection DuplicatedCode SpellCheckingInspection PhpUnusedFunctionInspection NotOptimalIfConditionsInspection */
   
   namespace Eisodos\Abstracts;
   
   use RuntimeException;
-
+  
   abstract class Singleton {
     
     /**
@@ -51,8 +50,8 @@
     
     /**
      * after getInstance() it must be initialized
-     * @var mixed $options_ Object's options
+     * @var array $options_ Object's options
      */
-    abstract protected function init($options_);
+    abstract protected function init(array $options_);
     
   }

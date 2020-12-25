@@ -10,7 +10,7 @@
   ],
   "minimum-stability": "dev",
   "require": {
-    "php": ">=7.2.0",
+    "php": ">=7.4",
     "ext-mbstring": "*",
     "psr/log": "^1.0",
     "php-console/php-console": "^3.1",

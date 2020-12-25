@@ -1,11 +1,10 @@
-<?php
-  
+<?php /** @noinspection DuplicatedCode SpellCheckingInspection PhpUnusedFunctionInspection NotOptimalIfConditionsInspection */
   
   namespace Eisodos\Interfaces;
   
   use Exception;
   use RuntimeException;
-
+  
   /**
    * Result types
    *   insert into test (a,b,c) values ('d','e','f'),('g','h','j')
@@ -92,7 +91,7 @@
      * @param bool $throwException_
      * @return int Affected rows
      */
-    public function executeDML($SQL_, $throwException_ = true);
+    public function executeDML(string $SQL_, $throwException_ = true): int;
     
     /**
      * Execute prepared DML
@@ -102,7 +101,7 @@
      * @param bool $throwException_
      * @return int Affected rows
      */
-    public function executePreparedDML($SQL_, $dataTypes_ = [], $data_ = [], $throwException_ = true);
+    public function executePreparedDML(string $SQL_, $dataTypes_ = [], $data_ = [], $throwException_ = true): int;
     
     /**
      * Preparing stored procedure parameter for binding
@@ -112,7 +111,7 @@
      * @param string $value_ Value
      * @param string $inOut_ Direction
      */
-    public function storedProcedureBind(&$bindVariables_, $variableName_, $dataType_, $value_, $inOut_ = 'IN');
+    public function storedProcedureBind(array &$bindVariables_, string $variableName_, string $dataType_, string $value_, $inOut_ = 'IN');
     
     /**
      * Preparing stored procedure parameter for binding from Eisodos parameter
@@ -120,7 +119,7 @@
      * @param string $parameterName_ Parameter name
      * @param string $dataType_ Datatype
      */
-    public function storedProcedureBindParam(&$bindVariables_, $parameterName_, $dataType_);
+    public function storedProcedureBindParam(array &$bindVariables_, string $parameterName_, string $dataType_);
     
     /**
      * Executes stored procedure
@@ -131,7 +130,7 @@
      * @param int $case_ Result array key transformation
      * @return string
      */
-    public function executeStoredProcedure($procedureName_, $bindVariables_, &$resultArray_, $throwException_ = true, $case_ = CASE_UPPER);
+    public function executeStoredProcedure(string $procedureName_, array $bindVariables_, array &$resultArray_, $throwException_ = true, $case_ = CASE_UPPER): string;
     
     /**
      * Run SQL query and get its result
@@ -146,8 +145,8 @@
      * @throws Exception
      */
     public function query(
-      $resultTransformation_,
-      $SQL_,
+      int $resultTransformation_,
+      string $SQL_,
       &$queryResult_ = NULL,
       $getOptions_ = [],
       $exceptionMessage_ = ''
@@ -157,14 +156,14 @@
      * Gives back the last query's column names
      * @return array
      */
-    public function getLastQueryColumns();
+    public function getLastQueryColumns(): array;
   
     /**
      * Gives back the last query's total rows
      * @return integer
      */
-    public function getLastQueryTotalRows();
-    
+    public function getLastQueryTotalRows(): int;
+  
     /**
      * Get native connection object
      * @return mixed
@@ -182,7 +181,7 @@
      * @return string
      * @throws RuntimeException
      */
-    public function emptySQLField($value_, $isString_ = true, $maxLength_ = 0, $exception_ = "", $withComma_ = false, $keyword_ = "NULL");
+    public function emptySQLField($value_, $isString_ = true, $maxLength_ = 0, $exception_ = "", $withComma_ = false, $keyword_ = "NULL"): string;
     
     /**
      * Converts value to NULL if empty
@@ -194,7 +193,7 @@
      * @return string
      * @throws RuntimeException
      */
-    function nullStr($value_, $isString_ = true, $maxLength_ = 0, $exception_ = "", $withComma_ = false);
+    public function nullStr($value_, $isString_ = true, $maxLength_ = 0, $exception_ = "", $withComma_ = false): string;
     
     /**
      * Converts value to DEFAULT if empty
@@ -206,11 +205,11 @@
      * @return string
      * @throws RuntimeException
      */
-    function defaultStr($value_, $isString_ = true, $maxLength_ = 0, $exception_ = "", $withComma_ = false);
-    
+    public function defaultStr($value_, $isString_ = true, $maxLength_ = 0, $exception_ = "", $withComma_ = false): string;
+  
     /**
      * Converts parameter value to NULL if empty
-     * @param mixed $value_ Value
+     * @param string $parameterName_ Value
      * @param bool $isString_ Value is string
      * @param int $maxLength_ Maximum length of column
      * @param string $exception_ Throw exception in case of error
@@ -218,11 +217,11 @@
      * @return string
      * @throws RuntimeException
      */
-    function nullStrParam($parameterName_, $isString_ = true, $maxLength_ = 0, $exception_ = "", $withComma_ = false);
-    
+    public function nullStrParam(string $parameterName_, $isString_ = true, $maxLength_ = 0, $exception_ = "", $withComma_ = false): string;
+  
     /**
      * Converts parameter value to DEFAULT if empty
-     * @param mixed $value_ Value
+     * @param string $parameterName_ Value
      * @param bool $isString_ Value is string
      * @param int $maxLength_ Maximum length of column
      * @param string $exception_ Throw exception in case of error
@@ -230,7 +229,7 @@
      * @return string
      * @throws RuntimeException
      */
-    function defaultStrParam($parameterName_, $isString_ = true, $maxLength_ = 0, $exception_ = "", $withComma_ = false);
+    public function defaultStrParam(string $parameterName_, $isString_ = true, $maxLength_ = 0, $exception_ = "", $withComma_ = false): string;
     
   }
 
