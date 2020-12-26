@@ -525,7 +525,7 @@
       }  // if page cached, create response
       Eisodos::$translator->finish();
       if (Eisodos::$parameterHandler->isOn('DEBUGREQUESTLOG')) {
-        Eisodos::$parameterHandler->setParam('ERROROUTPUT', str_replace('Screen', '', Eisodos::$parameterHandler->getParam('ERROROUTPUT') . ',Console'));
+        Eisodos::$parameterHandler->setParam('ERROROUTPUT', str_replace('Screen', '', Eisodos::$parameterHandler->getParam('ERROROUTPUT') . ',Console'), false, false, 'eisodos::render');
         Eisodos::$logger->writeErrorLog(NULL, 'RequestLog');
       }
       session_write_close();
@@ -548,7 +548,7 @@
       }
     
       if (Eisodos::$parameterHandler->isOn('DEBUGREQUESTLOG')) {
-        Eisodos::$parameterHandler->setParam('ERROROUTPUT', str_replace('Screen', '', Eisodos::$parameterHandler->getParam('ERROROUTPUT') . ',Console'));
+        Eisodos::$parameterHandler->setParam('ERROROUTPUT', str_replace('Screen', '', Eisodos::$parameterHandler->getParam('ERROROUTPUT') . ',Console'), false, false, 'eisodos::render');
         Eisodos::$logger->writeErrorLog(NULL, 'RequestLog');
       }
       session_write_close();
