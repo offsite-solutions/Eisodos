@@ -98,8 +98,8 @@
     /** Sets debug level
      * @param string $debugLevel_ trace,debug,info,notice,alert,warning,error,emergency,critical
      */
-    public function setDebugLevels($debugLevel_): void {
-      if (!$debugLevel_) {
+    public function setDebugLevels(string $debugLevel_): void {
+      if (!$debugLevel_ || $debugLevel_ === '') {
         return;
       }
       if (strpos($debugLevel_, ',') !== false) {

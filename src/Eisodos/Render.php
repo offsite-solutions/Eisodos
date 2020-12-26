@@ -80,7 +80,7 @@
       array $configOptions_,
       $cacheOptions_ = [],
       $templateEngineOptions_ = [],
-      $debugLevel_ = 'error'
+      $debugLevel_ = ''
     ): void {
       $this->_scriptStartTime = microtime(true);               // script start time
       if (!Eisodos::$applicationName) {
