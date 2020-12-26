@@ -6,7 +6,7 @@
   use Exception;
   use PC;
   use PhpConsole;
-  
+
   /**
    * Class Application - Manages classes, creation and initialization orders, page generation
    * Credit - According to https://designpatternsphp.readthedocs.io/
@@ -82,7 +82,7 @@
       $templateEngineOptions_ = [],
       $debugLevel_ = 'error'
     ): void {
-      $this->_scriptStartTime = microtime();               // script start time
+      $this->_scriptStartTime = microtime(true);               // script start time
       if (!Eisodos::$applicationName) {
         die('Application name is missing');
       }
@@ -108,16 +108,22 @@
       }
   
       // check if URL contains debugparameters
-      if (($debugURLPrefix = Eisodos::$parameterHandler->getParam("DEBUGURLPREFIX", "")) !== ''
-        && (Eisodos::$parameterHandler->neq("SessionDebugLevel", "") || Eisodos::$parameterHandler->neq($debugURLPrefix . "DebugLevel", ""))) {
+      if (($debugURLPrefix = Eisodos::$parameterHandler->getParam("DEBUGURLPREFIX", "")) !== '') {
+        if (Eisodos::$parameterHandler->neq("SessionDebugLevel", "") || Eisodos::$parameterHandler->neq($debugURLPrefix . "DebugLevel", "")) {
+          $debugLevel = Eisodos::$parameterHandler->getParam($debugURLPrefix . "DebugLevel", Eisodos::$parameterHandler->getParam("SessionDebugLevel"));
+          Eisodos::$parameterHandler->setParam("SessionDebugLevel", $debugLevel, true, false, 'eisodos::render');
+          Eisodos::$logger->setDebugLevels(Eisodos::$parameterHandler->getParam("SessionDebugLevel", Eisodos::$parameterHandler->getParam("DEBUGLEVELS")));
+          if ($debugLevel !== '') {
+            Eisodos::$parameterHandler->setParam("DEBUGEXCEPTIONS", "T", false, false, 'eisodos::render');
+            Eisodos::$parameterHandler->setParam("DEBUGMESSAGES", "T", false, false, 'eisodos::render');
+            Eisodos::$parameterHandler->setParam("DEBUGERRORS", "T", false, false, 'eisodos::render');
+          }
+        }
     
-        $debugLevel = Eisodos::$parameterHandler->getParam($debugURLPrefix . "DebugLevel", Eisodos::$parameterHandler->getParam("SessionDebugLevel"));
-        Eisodos::$parameterHandler->setParam("SessionDebugLevel", $debugLevel, true, false, 'eisodos::render');
-        Eisodos::$logger->setDebugLevels(Eisodos::$parameterHandler->getParam("SessionDebugLevel", Eisodos::$parameterHandler->getParam("DEBUGLEVELS")));
-        if ($debugLevel !== '') {
-          Eisodos::$parameterHandler->setParam("DEBUGEXCEPTIONS", "T", false, false, 'eisodos::render');
-          Eisodos::$parameterHandler->setParam("DEBUGMESSAGES", "T", false, false, 'eisodos::render');
-          Eisodos::$parameterHandler->setParam("DEBUGERRORS", "T", false, false, 'eisodos::render');
+        if (Eisodos::$parameterHandler->neq("SessionDebugRequestLog", "") || Eisodos::$parameterHandler->neq($debugURLPrefix . "RequestLog", "")) {
+          $debugLevel = Eisodos::$parameterHandler->getParam($debugURLPrefix . "RequestLog", Eisodos::$parameterHandler->getParam("SessionDebugRequestLog"));
+          Eisodos::$parameterHandler->setParam("SessionDebugRequestLog", $debugLevel, true, false, 'eisodos::render');
+          Eisodos::$parameterHandler->setParam("DEBUGREQUESTLOG", Eisodos::$parameterHandler->getParam("SessionDebugRequestLog"), false, false, 'eisodos::render');
         }
       }
   
@@ -225,18 +231,6 @@
     }
     
     /**
-     * Finish page generation and generate the page
-     */
-    public function finish(): void {
-      Eisodos::$parameterHandler->finish();
-      if (ob_get_level() > 0) {
-        $this->_generatePage();
-      }  // if page cached, create response
-      session_write_close();
-      Eisodos::$translator->finish();
-    }
-    
-    /**
      * Generates the Response
      * @param bool $rawResponse_ If true the response will not be modified
      * @return void
@@ -245,13 +239,13 @@
       if (Eisodos::$parameterHandler->neq('Redirect', '')
         || Eisodos::$parameterHandler->neq('PageExpires', '')) {
         ob_end_clean();
-    
+  
         header('Expires: Mon, 26 Jul 1997 05:00:00 GMT');
         header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT');
         header('Cache-Control: no-store, no-cache, must-revalidate');
         header('Cache-Control: post-check=0, pre-check=0', false);
         header('Pragma: no-cache');
-    
+  
         if (Eisodos::$parameterHandler->neq('Redirect', '')) {
           header('Location: ' . Eisodos::$parameterHandler->getParam('Redirect'));
           
@@ -285,32 +279,39 @@
           true,
           false
         );
-        
-        $a_array = explode(' ', $this->_scriptStartTime);
+  
+        /* $a_array = explode(' ', $this->_scriptStartTime);
         $b_array = explode(' ', microtime());
         $a_array[0] = substr($a_array[0], 1);
         $b_array[0] = substr($b_array[0], 1);
         $a_string = $a_array[1] . $a_array[0];
-        $b_string = $b_array[1] . $b_array[0];
-        
+        $b_string = $b_array[1] . $b_array[0]; */
+  
         if ($this->_pageDebugInfo !== '') {
           $this->Response .= '<!-- ' . $this->_pageDebugInfo . '-->' . "\n";
         }
   
+        $unit = array('B', 'KB', 'MB', 'GB', 'TB', 'PB');
+        $mu = memory_get_usage(true);
+        $pmu = memory_get_peak_usage(true);
+        $memoryUsage = (@round(
+              $mu / (1024 ** ($i = (integer)floor(log($mu, 1024)))),
+              2
+            ) . ' ' . $unit[$i]) . ' (' . (@round(
+              $pmu / (1024 ** ($i = (integer)floor(log($pmu, 1024)))),
+              2
+            ) . ' ' . $unit[$i]) . ')';
+        //$executionTime = bcsub($b_string, $a_string). (microtime() - $this->_scriptStartTime);
+        $executionTime = round(microtime(true) - $this->_scriptStartTime, 4) . ' sec';
+  
         if (Eisodos::$parameterHandler->isOn('INCLUDESTATISTIC') and // ajax-nal ne rakja bele
           !(!empty($_SERVER['HTTP_X_REQUESTED_WITH']) and
             strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest')) {
-          $unit = array('B', 'KB', 'MB', 'GB', 'TB', 'PB');
-          $mu = memory_get_usage(true);
-          $pmu = memory_get_peak_usage(true);
-          $this->Response .= "\n<!-- Memory usage: " . (@round(
-                $mu / (1024 ** ($i = (integer)floor(log($mu, 1024)))),
-                2
-              ) . ' ' . $unit[$i]) . ' (' . (@round(
-                $pmu / (1024 ** ($i = (integer)floor(log($pmu, 1024)))),
-                2
-              ) . ' ' . $unit[$i]) . '), Execution time: ' . bcsub($b_string, $a_string) . ' -->' . "\n";
+          $this->Response .= "\n<!-- Memory usage: " . $memoryUsage . ', Execution time: ' . $executionTime . ' -->' . "\n";
         }
+  
+        Eisodos::$logger->info('Memory usage: ' . $memoryUsage);
+        Eisodos::$logger->info('Execution time: ' . $executionTime);
   
         if (Eisodos::$parameterHandler->isOn('SavePageToDisk')
           and Eisodos::$parameterHandler->neq(Eisodos::$parameterHandler->getParam('SaveFileName'), '')) {
@@ -355,7 +356,7 @@
         if (preg_match($pattern, $string, $matches)) {
           return $matches[1];
         }
-    
+  
         return '';
       }
   
@@ -513,7 +514,23 @@
         }
       }
     }
-    
+  
+    /**
+     * Finish page generation and generate the page
+     */
+    public function finish(): void {
+      Eisodos::$parameterHandler->finish();
+      if (ob_get_level() > 0) {
+        $this->_generatePage();
+      }  // if page cached, create response
+      Eisodos::$translator->finish();
+      if (Eisodos::$parameterHandler->isOn('DEBUGREQUESTLOG')) {
+        Eisodos::$parameterHandler->setParam('ERROROUTPUT', str_replace('Screen', '', Eisodos::$parameterHandler->getParam('ERROROUTPUT') . ',Console'));
+        Eisodos::$logger->writeErrorLog(NULL, 'RequestLog');
+      }
+      session_write_close();
+    }
+  
     /**
      * Finish page generation with or without saving session variables or handling languages
      * @param bool $saveSessionVariables_
@@ -521,15 +538,19 @@
      */
     public function finishRaw($saveSessionVariables_ = false, $handleLanguages_ = false): void {
       Eisodos::$parameterHandler->finish($saveSessionVariables_);
-      
+    
       if ($handleLanguages_) {
         Eisodos::$translator->finish();
       }
-      
+    
       if (ob_get_level() > 0) {
         $this->_generatePage(true);
       }
-      
+    
+      if (Eisodos::$parameterHandler->isOn('DEBUGREQUESTLOG')) {
+        Eisodos::$parameterHandler->setParam('ERROROUTPUT', str_replace('Screen', '', Eisodos::$parameterHandler->getParam('ERROROUTPUT') . ',Console'));
+        Eisodos::$logger->writeErrorLog(NULL, 'RequestLog');
+      }
       session_write_close();
     }
     

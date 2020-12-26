@@ -6,7 +6,7 @@
   use Eisodos\Interfaces\ParserInterface;
   use Exception;
   use RuntimeException;
-  
+
   class TemplateEngine extends Singleton {
     
     // Private properties

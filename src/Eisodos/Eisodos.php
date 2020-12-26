@@ -4,7 +4,7 @@
   
   use Eisodos\Abstracts\Singleton;
   use Exception;
-  
+
   /**
    * Eisodos singleton class, usage:
    *
@@ -90,12 +90,12 @@
       } catch (Exception $e) {
         die('Initialization failure');
       }
-    
+  
       self::$applicationDir = $options_[0];
       self::$applicationName = $options_[1];
       self::$parameterHandler->setParam('._applicationName', self::$applicationName, false, false, 'eisodos');
       self::$parameterHandler->setParam('._applicationDir', self::$applicationDir, false, false, 'eisodos');
-    
+  
       return $this;
     }
     

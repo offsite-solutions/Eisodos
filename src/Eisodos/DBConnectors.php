@@ -4,7 +4,7 @@
   
   use Eisodos\Abstracts\Singleton;
   use Eisodos\Interfaces\DBConnectorInterface;
-  
+
   /**
    * Eisodos DB Connectors singleton class, usage:
    *

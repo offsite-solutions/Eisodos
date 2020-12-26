@@ -3,7 +3,7 @@
   namespace Eisodos\Parsers;
   
   use Eisodos\Eisodos;
-  
+
   class CallbackFunctionShortParser extends CallbackFunctionParser {
     
     /**

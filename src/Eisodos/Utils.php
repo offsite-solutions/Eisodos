@@ -4,7 +4,7 @@
   
   use Eisodos\Abstracts\Singleton;
   use Exception;
-  
+
   class Utils extends Singleton {
     
     public function safe_array_value($array_, $key_, $defaultValue_ = ''): string {

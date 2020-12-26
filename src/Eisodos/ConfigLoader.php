@@ -5,7 +5,7 @@
   use Eisodos\Abstracts\Singleton;
   use Exception;
   use PC;
-  
+
   /*
    * TODO: (low) config file editor
    * TODO: (critical) same handling of INI type's (T,"true",F,"false",empty) and JSON type's (true,false,null) values
@@ -161,11 +161,11 @@
       if ($section_ === '') {
         return false;
       }
-    
+  
       $section_ = strtolower($section_);
       $comment = '#';
       $group = '';
-    
+  
       $extension = $this->_getExtension();
       
       /*
@@ -236,12 +236,12 @@
         } catch (Exception $e) {
         }
       }
-    
+  
       $source = basename($configFile) . ':' . $section_;
       $listOfConfigFiles = Eisodos::$parameterHandler->getParam('ConfigFiles');
       Eisodos::$parameterHandler->setParam(
         'ConfigFiles', $listOfConfigFiles . ($listOfConfigFiles === '' ? '' : ';') . $source, false, false, 'eisodos::configLoader');
-    
+  
       return $source;
     }
     
@@ -331,7 +331,7 @@
         }
         $L[$key] = $val;
       }
-    
+  
       return $L;
     }
   

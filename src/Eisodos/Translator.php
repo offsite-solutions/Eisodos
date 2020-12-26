@@ -6,7 +6,7 @@
   use Eisodos\Interfaces\ParserInterface;
   use Exception;
   use PC;
-  
+
   /**
    * Class Translator
    * @package Eisodos
@@ -37,13 +37,13 @@
      */
     public function init($options_ = []): void {
       $this->_collectLangIDs = Eisodos::$parameterHandler->isOn('COLLECTLANGIDS');
-    
+  
       // loading translate file
       $this->loadMasterLanguageFile();
-    
+  
       // loading user editable translate file
       $this->_loadUserLanguageFile();
-    
+  
       // register as Parser
       Eisodos::$templateEngine->registerParser($this);
     }
@@ -166,7 +166,7 @@
           and strpos($text_, '[:') !== false)
         and $LoopCount <= $loopCountLimit) {
         $translatepos = strpos($text_, '[:');
-      
+  
         $text_ = Eisodos::$utils->replace_all(
           $text_,
           substr($text_, $translatepos, strpos($text_, ':]') - $translatepos + 2),
@@ -300,7 +300,7 @@
           substr($text_, $blockPosition_ + 2, strpos($text_, ':]') - $blockPosition_ - 2)
         )
       );
-    
+  
       return $text_;
     }
     

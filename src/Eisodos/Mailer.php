@@ -8,7 +8,7 @@
   use Mail_mime;
   use PC;
   use PEAR;
-  
+
   final class Mailer extends Singleton {
     
     // Private variables
@@ -44,7 +44,7 @@
             'eol' => "\n"
           )
         );
-      
+  
         $message->setHTMLBody($body_);
         $extraHeaders = array(
           'From' => $from_,
@@ -105,7 +105,7 @@
             'eol' => "\n"
           )
         );
-      
+  
         $message->setHTMLBody($body_);
         foreach ($filesToAttach_ as $f) {
           $message->addAttachment($f);

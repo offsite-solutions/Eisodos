@@ -3,13 +3,13 @@
   namespace Eisodos;
   
   require_once('Utils.php');
-  
+
   use DateTime;
   use Eisodos\Abstracts\Singleton;
   use Exception;
   use PC;
   use Psr\Log\LoggerInterface;
-  
+
   final class Logger extends Singleton implements LoggerInterface {
     
     // Private variables
@@ -59,7 +59,7 @@
         $st .= "----- Extended info -----\n";
         $st .= $debugInformation_;
       }
-    
+  
       return $st;
     }
   
@@ -67,11 +67,15 @@
       switch ($text_) {
         case 'BEGIN':
           {
-            return 2 * $traceStep_++;
+            $traceStep_ = max([0, $traceStep_++]);
+    
+            return 2 * $traceStep_;
           }
         case 'END':
           {
-            return 2 * max([0, --$traceStep_]);
+            $traceStep_ = max([0, --$traceStep_]);
+    
+            return 2 * $traceStep_;
           }
         default:
           {
@@ -200,8 +204,18 @@
         Eisodos::$render->finish();
         exit;
       }
-      
+  
       if (strpos(Eisodos::$parameterHandler->getParam('ERROROUTPUT'), 'Screen') !== false
+        and $this->_cliMode === true) {
+        print($errorString);
+      }
+  
+      if (strpos(Eisodos::$parameterHandler->getParam('ERROROUTPUT'), 'Console') !== false
+        and $this->_cliMode === false) {
+        PC::debug($errorString);
+      }
+  
+      if (strpos(Eisodos::$parameterHandler->getParam('ERROROUTPUT'), 'Console') !== false
         and $this->_cliMode === true) {
         print($errorString);
       }

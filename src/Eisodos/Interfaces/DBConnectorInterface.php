@@ -4,7 +4,7 @@
   
   use Exception;
   use RuntimeException;
-  
+
   /**
    * Result types
    *   insert into test (a,b,c) values ('d','e','f'),('g','h','j')
