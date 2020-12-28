@@ -6,16 +6,23 @@
   use Exception;
 
   class Utils extends Singleton {
-    
+  
+    /**
+     * Gives back an array value if exists. If it is an empty string or null it gives back the default value
+     * @param $array_ Array
+     * @param $key_ Key
+     * @param string $defaultValue_
+     * @return string
+     */
     public function safe_array_value($array_, $key_, $defaultValue_ = ''): string {
       if (isset($array_) and array_key_exists($key_, $array_)) {
         if ($array_[$key_] === '') {
           return $defaultValue_;
         }
-        
-        return $array_[$key_];
-      }
       
+        return (string)$array_[$key_];
+      }
+    
       return $defaultValue_;
     }
     
