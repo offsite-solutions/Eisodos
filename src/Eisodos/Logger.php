@@ -7,6 +7,7 @@
   use DateTime;
   use Eisodos\Abstracts\Singleton;
   use Exception;
+  use Throwable;
   use PC;
   use Psr\Log\LoggerInterface;
 
@@ -34,18 +35,18 @@
   
     /**
      * Generates log file
-     * @param Exception|null $exception_
+     * @param Throwable|null $throwable_
      * @param string $debugInformation_
      * @return string
      */
-    private function _generateFileLog(?Exception $exception_, $debugInformation_ = ''): string {
+    private function _generateFileLog(?Throwable $throwable_, $debugInformation_ = ''): string {
       $st = "\n";
       $st .= '---------- ' . Eisodos::$applicationName . " ----------\n";
       $st .= date('Y.m.d. H:i:s') . "\n";
-      if ($exception_) {
-        $st .= $exception_->getMessage() . "\n";
-        $st .= $exception_->getFile() . ' at line ' . $exception_->getLine() . "\n";
-        $st .= $exception_->getTraceAsString() . "\n";
+      if ($throwable_) {
+        $st .= $throwable_->getMessage() . "\n";
+        $st .= $throwable_->getFile() . ' at line ' . $throwable_->getLine() . "\n";
+        $st .= $throwable_->getTraceAsString() . "\n";
       }
       $st .= "----- Extended Error -----\n";
       $st .= Eisodos::$utils->safe_array_value($_POST, '__EISODOS_extendedError') . "\n";
@@ -116,12 +117,12 @@
      * Writes error log to file, mail, screen, callback
      * target can be set in config by ERROROUTPUT=file,mail,screen,"@callback"
      * In CLI Mode screen echos the log to the standard output
-     * @param Exception|NULL $exception_ Exception object
+     * @param Throwable|NULL $throwable_ Throwable object
      * @param string $debugInformation_ Extra debug information
      * @param array $extraMails_ Send the debug to the mail address specified
      * @return void
      */
-    public function writeErrorLog(?Exception $exception_, $debugInformation_ = "", $extraMails_ = array()): void {
+    public function writeErrorLog(?Throwable $throwable_, $debugInformation_ = "", $extraMails_ = array()): void {
       try {
         if (strpos(Eisodos::$parameterHandler->getParam('ERROROUTPUT'), '@') !== false) {
           $errorOutput = Eisodos::$parameterHandler->getParam('ERROROUTPUT') . ',';
@@ -130,13 +131,13 @@
           $error_function(
             $this,
             array(
-              'Message' => ($exception_ ? $exception_->getMessage() . "\n" : '') . Eisodos::$utils->safe_array_value(
+              'Message' => ($throwable_ ? $throwable_->getMessage() . "\n" : '') . Eisodos::$utils->safe_array_value(
                   $_POST,
                   '__EISODOS_extendedError'
                 ),
-              'File' => $exception_->getFile(),
-              'Line' => $exception_->getLine(),
-              'Trace' => $exception_->getTraceAsString(),
+              'File' => $throwable_->getFile(),
+              'Line' => $throwable_->getLine(),
+              'Trace' => $throwable_->getTraceAsString(),
               'Parameters' => Eisodos::$parameterHandler->params2log(),
               'Debug' => $debugInformation_
             )
@@ -151,8 +152,8 @@
           'eisodos::logger'
         );
       }
-      
-      $errorString = $this->_generateFileLog($exception_, $debugInformation_);
+    
+      $errorString = $this->_generateFileLog($throwable_, $debugInformation_);
       
       try {
         if (strpos(Eisodos::$parameterHandler->getParam('ERROROUTPUT'), 'File') !== false) {
