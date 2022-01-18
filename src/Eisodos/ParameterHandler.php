@@ -131,10 +131,10 @@
      */
     public function neq(
       string $parameterName_,
-      $value_,
-      $defaultValue_ = '',
-      $caseInsensitive_ = true,
-      $trimValue_ = true
+             $value_,
+             $defaultValue_ = '',
+             $caseInsensitive_ = true,
+             $trimValue_ = true
     ): bool {
       return (!$this->eq($parameterName_, $value_, $defaultValue_, $caseInsensitive_, $trimValue_));
     }
@@ -189,10 +189,10 @@
      */
     public function eq(
       string $parameterName_,
-      $value_,
-      $defaultValue_ = '',
-      $caseInsensitive_ = true,
-      $trimValue_ = true
+             $value_,
+             $defaultValue_ = '',
+             $caseInsensitive_ = true,
+             $trimValue_ = true
     ): bool {
       if (strpos($value_, '^') === 0) {
         $value_ = (string)$this->getParam(substr($value_, 1));
@@ -282,9 +282,11 @@
             return $lastrandom;
         }
         if (strpos($parameterName_, 'env_') === 0) {
-          return getenv(substr($parameterName_, 4));
-        }
-        if (isset($this->_params[$parameterName_])) {
+          $v = getenv(substr($parameterName_, 4));
+          if ($v === false) {
+            $v = '';
+          }
+        } else if (isset($this->_params[$parameterName_])) {
           $v = $this->_params[$parameterName_]['value'];
         } else {
           $v = '';
@@ -307,11 +309,11 @@
      */
     public function setParam(
       string $parameterName_,
-      $value_ = '',
-      $sessionStored_ = false,
-      $cookieStored_ = false,
-      $source_ = ''): void {
-  
+             $value_ = '',
+             $sessionStored_ = false,
+             $cookieStored_ = false,
+             $source_ = ''): void {
+    
       if (!$parameterName_) {
         return;
       }
