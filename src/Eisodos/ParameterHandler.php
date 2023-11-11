@@ -4,12 +4,12 @@
   
   // TODO: (normal) implement loopcount to protect infinite loops in replaceParamInString()
   // TODO: (low - must check performance test first) use multibyte substr, strpos, etc functions
-
+  
   use Eisodos\Abstracts\Singleton;
   use Exception;
   use PC;
   use RuntimeException;
-
+  
   /**
    * Class ParameterHandler
    * @package Eisodos
@@ -32,7 +32,7 @@
     // Public variables
     
     // Private functions
-  
+    
     /**
      * Parameter Handler initializer
      * @param array $options_
@@ -40,10 +40,10 @@
      */
     public function init($options_ = []): void {
       $this->_initParameterCollecting();
-  
+      
       // loading session variables
       $this->_loadSessionVariables();
-  
+      
       // load cookies to the parameter array
       foreach ($_COOKIE as $p => $v) {
         $this->setParam($p, $v, false, true, 'cookie');
@@ -138,7 +138,7 @@
     ): bool {
       return (!$this->eq($parameterName_, $value_, $defaultValue_, $caseInsensitive_, $trimValue_));
     }
-  
+    
     /**
      * Checks if parameter's value is on ('T','ON','1','TRUE')
      * @param string $parameterName_ Name of the parameter
@@ -149,16 +149,16 @@
       string $parameterName_,
       $defaultValue_ = 'F'
     ): bool {
-  
+      
       if (strpos($parameterName_, '^') === 0) {
         $parameterName_ = (string)$this->getParam(substr($parameterName_, 1));
       }
-  
+      
       $value = strtoupper($this->getParam($parameterName_, $defaultValue_));
-  
+      
       return (in_array($value, ['T', 'ON', '1', 'TRUE', 'YES', 'Y', true], true));
     }
-  
+    
     /**
      * Checks if parameter's value is off ('T','ON','1','TRUE')
      * @param string $parameterName_ Name of the parameter
@@ -172,12 +172,12 @@
       if (strpos($parameterName_, '^') === 0) {
         $parameterName_ = (string)$this->getParam(substr($parameterName_, 1));
       }
-  
+      
       $value = strtoupper($this->getParam($parameterName_, $defaultValue_));
-  
+      
       return (in_array($value, ['F', 'OFF', '0', 'FALSE', 'NO', 'N', false], true));
     }
-  
+    
     /**
      * Checks if parameter's value is the same as value specified
      * @param string $parameterName_ Name of the parameter
@@ -232,7 +232,7 @@
         switch ($parameterName_) {
           case 'seq':
             $this->_param_SEQ++;
-  
+            
             return (string)$this->_param_SEQ;
           case 'seq0':
             $this->_param_SEQ = 0;
@@ -278,26 +278,29 @@
               $lastrandom .= chr(ord('a') + random_int(0, 25));
             }
             $this->setParam('lastrandom', $lastrandom, false, false, 'eisodos::parameterHandler');
-  
+            
             return $lastrandom;
         }
         if (strpos($parameterName_, 'env_') === 0) {
           $v = getenv(substr($parameterName_, 4));
-          if ($v === false) {
-            $v = '';
+          if ($v === false || $v === '') {
+            $v = getenv(strtoupper(substr($parameterName_, 4)));
+            if ($v === false) {
+              $v = '';
+            }
           }
         } else if (isset($this->_params[$parameterName_])) {
           $v = $this->_params[$parameterName_]['value'];
         } else {
           $v = '';
         }
-  
+        
         return ($v === '' ? $defaultValue_ : $v);
       } catch (Exception $e) {
         return '';
       }
     }
-  
+    
     /**
      * Add parameter to the parameter's array
      * If parameter name starts with !, then it will readonly
@@ -313,7 +316,7 @@
              $sessionStored_ = false,
              $cookieStored_ = false,
              $source_ = ''): void {
-    
+      
       if (!$parameterName_) {
         return;
       }
@@ -403,9 +406,9 @@
       $base64Decode_ = false
     ) {
       $result = 0;
-  
+      
       $LParamFilters2 = array();
-  
+      
       $parameterFilterLines = [];
       Eisodos::$configLoader->loadParameterFilters($parameterFilterLines);
       
@@ -458,17 +461,17 @@
           }
         }
       }
-  
+      
       $trimInputParams = $this->isOn('TRIMINPUTPARAMS', 'T');
       $trimTrailingPer = $this->isOn('TRIMTRAILINGPER', 'T');
-  
+      
       foreach ($parameters_ as $n => $v) {
         $doNotAddIt = false;
         $decodeIt = false;
         $cookieIt = false;
         $storeIt = false;
         $SIDCoded = false;
-    
+        
         // type checking
         $parameterType = '';
         $parameterTypeError = '';
@@ -593,7 +596,7 @@
             }
           }
         }
-    
+        
         $this->setParam($n, $v, $storeIt, $cookieIt, 'request');
         
         if (!is_array($v)) {
@@ -815,11 +818,11 @@
         }
       }
     }
-  
+    
     public function getParameterArray(): array {
       return $this->_params;
     }
-  
+    
     public function mergeParameterArray(array $params_): void {
       $this->_params = array_merge($this->_params, $params_);
     }
