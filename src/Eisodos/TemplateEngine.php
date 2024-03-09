@@ -182,8 +182,8 @@
       }
   
       if (($disableLanguageTagParsing_ === false)
-        and (Eisodos::$parameterHandler->isOn('MULTILANG'))
-        and !Eisodos::$parameterHandler->isOn('EditorMode')) {
+        && (Eisodos::$parameterHandler->isOn('MULTILANG'))
+        && !Eisodos::$parameterHandler->isOn('EditorMode')) {
         $LangSpec = Eisodos::$parameterHandler->getParam(
             'Lang',
             Eisodos::$parameterHandler->getParam('DEFLANG', 'HU')
@@ -193,7 +193,15 @@
       }
       
       $TemplateFile = '';
-      $templateDir = Eisodos::$parameterHandler->getParam('TEMPLATEDIR');
+      // ha a templateId tartalmaz / jelet, akkor megnezni, hogy ehhez tartozik-e kulon config konyvtar
+      if (strpos($templateID_, '/') !== false) {
+        $templateDir = Eisodos::$parameterHandler->getParam('TEMPLATEDIR.' . explode('/', $templateID_, 2)[0]);
+      } else {
+        $templateDir = '';
+      }
+      if ($templateDir === '') {
+        $templateDir = Eisodos::$parameterHandler->getParam('TEMPLATEDIR');
+      }
       
       // TODO EditorMode-ban engedelyezni a template-ek betolteset abszolut path-rol (vendor/EisodosEditor/templates/) hogy ne kelljen linkelni
       
