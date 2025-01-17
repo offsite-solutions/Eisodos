@@ -71,7 +71,7 @@
      * Commit transaction
      * @param mixed $savePoint_ Transaction savepoint
      */
-    public function commit($savePoint_ = NULL): void;
+    public function commit(): void;
     
     /**
      * Rollback transaction
@@ -89,9 +89,9 @@
      * Executes simple DML sentence
      * @param string $SQL_ SQL sentence
      * @param bool $throwException_
-     * @return int Affected rows
+     * @return int|bool Affected rows - false on error in case of exception didn't throw
      */
-    public function executeDML(string $SQL_, $throwException_ = true): int;
+    public function executeDML(string $SQL_, $throwException_ = true): int|bool;
     
     /**
      * Execute prepared DML
@@ -99,38 +99,48 @@
      * @param array $dataTypes_ Data types
      * @param array $data_ Data
      * @param bool $throwException_
-     * @return int Affected rows
+     * @return int|bool Affected rows - false on error in case of exception didn't throw
      */
-    public function executePreparedDML(string $SQL_, $dataTypes_ = [], $data_ = [], $throwException_ = true): int;
+    public function executePreparedDML(string $SQL_, $dataTypes_ = [], $data_ = [], $throwException_ = true): int|bool;
+    
+    /**
+     * Execute prepared DML
+     * @param string $SQL_ SQL sentence
+     * @param $boundVariables_ Parameter array reference
+     * @param bool $throwException_
+     * @return int|bool Affected rows - false on error in case of exception didn't throw
+     * @throws RuntimeException
+     */
+    public function executePreparedDML2(string $SQL_, array $boundVariables_, $throwException_ = true): int|bool;
     
     /**
      * Preparing stored procedure parameter for binding
-     * @param array $bindVariables_ Parameter array reference
+     * @param array $boundVariables_ Parameter array reference
      * @param string $variableName_ Parameter name
      * @param string $dataType_ Datatype
      * @param string $value_ Value
      * @param string $inOut_ Direction
      */
-    public function storedProcedureBind(array &$bindVariables_, string $variableName_, string $dataType_, string $value_, $inOut_ = 'IN');
+    public function bind(array &$boundVariables_, string $variableName_, string $dataType_, string $value_, $inOut_ = 'IN');
     
     /**
      * Preparing stored procedure parameter for binding from Eisodos parameter
-     * @param array $bindVariables_ Parameter array reference
+     * @param array $boundVariables_ Parameter array reference
      * @param string $parameterName_ Parameter name
      * @param string $dataType_ Datatype
      */
-    public function storedProcedureBindParam(array &$bindVariables_, string $parameterName_, string $dataType_);
+    public function bindParam(array &$boundVariables_, string $parameterName_, string $dataType_);
     
     /**
      * Executes stored procedure
      * @param string $procedureName_ Procedure name
-     * @param array $bindVariables_ Parameter array
-     * @param array $resultArray_ Result array
+     * @param array $inputVariables_ Parameter array
+     * @param array $resultVariables_ Result array
      * @param bool $throwException_ Throw exception in case of error
      * @param int $case_ Result array key transformation
-     * @return string
+     * @return bool
      */
-    public function executeStoredProcedure(string $procedureName_, array $bindVariables_, array &$resultArray_, $throwException_ = true, $case_ = CASE_UPPER): string;
+    public function executeStoredProcedure(string $procedureName_, array $inputVariables_, array &$resultVariables_, $throwException_ = true, $case_ = CASE_UPPER): bool;
     
     /**
      * Run SQL query and get its result

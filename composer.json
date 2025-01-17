@@ -8,16 +8,26 @@
       "email": "info@offsite-solutions.com"
     }
   ],
+  "repositories": [
+    {
+      "type": "composer",
+      "url": "https://plugins.roundcube.net"
+    },
+    {
+      "type": "pear",
+      "url": "https://pear.php.net"
+    }
+  ],
   "minimum-stability": "dev",
   "require": {
     "php": ">=7.4",
     "ext-mbstring": "*",
+    "ext-bcmath": "*",
+    "ext-json": "*",
     "psr/log": "^1.0",
     "php-console/php-console": "^3.1",
-    "ext-json": "*",
     "pear/mail": "*",
-    "pear/mail_mime": "*",
-    "ext-bcmath": "*"
+    "pear/mail_mime": "*"
   },
   "require-dev": {
   },

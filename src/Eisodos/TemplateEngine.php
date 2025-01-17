@@ -195,7 +195,7 @@
       $TemplateFile = '';
       // ha a templateId tartalmaz / jelet, akkor megnezni, hogy ehhez tartozik-e kulon config konyvtar
       if (strpos($templateID_, '/') !== false) {
-        $templateDir = Eisodos::$parameterHandler->getParam('TEMPLATEDIR.' . explode('/', $templateID_, 2)[0]);
+        $templateDir = Eisodos::$parameterHandler->getParam(explode('/', $templateID_, 2)[0] . '.TEMPLATEDIR');
       } else {
         $templateDir = '';
       }
