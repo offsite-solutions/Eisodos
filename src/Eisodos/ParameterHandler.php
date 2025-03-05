@@ -147,7 +147,7 @@
      */
     public function isOn(
       string $parameterName_,
-      $defaultValue_ = 'F'
+             $defaultValue_ = 'F'
     ): bool {
       
       if (strpos($parameterName_, '^') === 0) {
@@ -167,7 +167,7 @@
      */
     public function isOff(
       string $parameterName_,
-      $defaultValue_ = 'T'
+             $defaultValue_ = 'T'
     ): bool {
       if (strpos($parameterName_, '^') === 0) {
         $parameterName_ = (string)$this->getParam(substr($parameterName_, 1));
@@ -477,6 +477,9 @@
         $parameterTypeError = '';
         $parameterTypeErrorLog = '';
         
+        // Null byte injection protection
+        $v = str_replace(chr(0), '', $v);
+        
         if ($trimInputParams and !is_array($v)) {
           $v = trim($v);
           if ($trimTrailingPer and $v !== '') {
@@ -716,6 +719,13 @@
         }
       }
       $_SESSION = array();
+      // default cookie options
+      $_cookie_options = array(
+        'domain' => Eisodos::$parameterHandler->getParam('COOKIE_DOMAIN'),
+        'secure' => Eisodos::$parameterHandler->isOn('COOKIE_SECURE', Eisodos::$parameterHandler->eq('https','https')?'T':'F'),
+        'httponly' => Eisodos::$parameterHandler->isOn('COOKIE_HTTPONLY', 'F'),
+        'samesite' => Eisodos::$parameterHandler->getParam('COOKIE_SAMESITE', 'None')
+      );
       foreach ($this->_params as $key => $v) {
         if ($v['flag'] === 's') {
           $_SESSION[$key] = $v['value'];
@@ -726,18 +736,18 @@
               explode(',', strtolower(Eisodos::$parameterHandler->getParam('RAWCOOKIES'))),
               true
             )) {
-              setcookie($key, $v['value'], time() + 60 * 60 * 24 * $this->_cookies[$key]);
+              setcookie($key, $v['value'], array_merge($_cookie_options, ['expires' => time() + 60 * 60 * 24 * $this->_cookies[$key]]));
             } else {
-              setrawcookie($key, $v['value'], time() + 60 * 60 * 24 * $this->_cookies[$key]);
+              setrawcookie($key, $v['value'], array_merge($_cookie_options, ['expires' => time() + 60 * 60 * 24 * $this->_cookies[$key]]));
             }
           } elseif (in_array(
             strtolower($key),
             explode(',', strtolower(Eisodos::$parameterHandler->getParam('RAWCOOKIES'))),
             true
           )) {
-            setrawcookie($key, $v['value']);
+            setrawcookie($key, $v['value'], $_cookie_options);
           } else {
-            setcookie($key, $v['value']);
+            setcookie($key, $v['value'], $_cookie_options);
           }
         }
       }
@@ -751,7 +761,7 @@
      */
     public function udSCode(
       string $textToCode_,
-      $useMarks_ = false
+             $useMarks_ = false
     ): string {
       $c = $textToCode_;
       $d = '';
