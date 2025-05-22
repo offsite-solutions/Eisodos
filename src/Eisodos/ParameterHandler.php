@@ -628,15 +628,21 @@
       if ($this->eq('Lang', '') && $this->isOn('LANGFROMHEADER')) {
         $headers = Eisodos::$utils->get_request_headers();
         $browserLanguages = [];
+        // if specific header is configured, get its value and split them
         if ($this->neq('LANGHEADER', '') && array_key_exists($this->getParam('LANGHEADER'), $headers)) {
           $browserLanguages = explode(',', $headers[$this->getParam('LANGHEADER')]);
         }
-        if ($this->eq('LANGFROMHEADER', 'T') && array_key_exists('Accept-Language', $headers)) {
+        // languages are split from hu, hu-HU, en, en-US;q=0.8 hu;q=0.7 en
+        if ($this->eq("LANGFROMHEADER", "T") && array_key_exists('Accept-Language', $headers)) {
           $browserLanguages = array_merge($browserLanguages, explode(',', explode(';', $headers['Accept-Language'])[0]));
         }
+        // leave the first part of languages hu, hu-HU, en, en-US
+        foreach ($browserLanguages as $i => $iValue) {
+          $browserLanguages[$i] = explode('-', strtoupper(trim($iValue)))[0];
+        }
+        // match input language to the languages configured
         $acceptedLanguages = explode(',', $this->getParam('LANGS'));
         foreach ($browserLanguages as $browserLanguage) {
-          $browserLanguage = strtoupper(trim($browserLanguage));
           if (in_array($browserLanguage, $acceptedLanguages, true)) {
             $this->setParam('Lang', $browserLanguage, true, false, 'eisodos::parameterHandler');
           }
@@ -741,7 +747,7 @@
       // default cookie options
       $_cookie_options = array(
         'domain' => Eisodos::$parameterHandler->getParam('COOKIE_DOMAIN'),
-        'secure' => Eisodos::$parameterHandler->isOn('COOKIE_SECURE', Eisodos::$parameterHandler->eq('https','https')?'T':'F'),
+        'secure' => Eisodos::$parameterHandler->isOn('COOKIE_SECURE', Eisodos::$parameterHandler->eq('https', 'https') ? 'T' : 'F'),
         'httponly' => Eisodos::$parameterHandler->isOn('COOKIE_HTTPONLY', 'F'),
         'samesite' => Eisodos::$parameterHandler->getParam('COOKIE_SAMESITE', 'None')
       );
