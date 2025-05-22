@@ -625,8 +625,8 @@
       }
       
       /* in case no lang parameter defined and header recognition is on */
-      if (function_exists('apache_request_headers') && $this->eq('Lang', '') && $this->isOn('LANGFROMHEADER')) {
-        $headers=apache_request_headers();
+      if ($this->eq('Lang', '') && $this->isOn('LANGFROMHEADER')) {
+        $headers=Eisodos::$utils->get_request_headers();
         if (array_key_exists('Accept-Language', $headers)) {
           $browserLanguages = explode(',',explode(';', $headers['Accept-Language'])[0]);
           $acceptedLanguages=explode(',',$this->getParam('LANGS'));
