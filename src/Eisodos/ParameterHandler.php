@@ -624,6 +624,21 @@
         }
       }
       
+      /* in case no lang parameter defined and header recognition is on */
+      if (function_exists('apache_request_headers') && $this->eq('Lang', '') && $this->isOn('LANGFROMHEADER')) {
+        $headers=apache_request_headers();
+        if (array_key_exists('Accept-Language', $headers)) {
+          $browserLanguages = explode(',',explode(';', $headers['Accept-Language'])[0]);
+          $acceptedLanguages=explode(',',$this->getParam('LANGS'));
+          foreach ($browserLanguages as $browserLanguage) {
+            $browserLanguage = strtoupper(trim($browserLanguage));
+            if (in_array($browserLanguage, $acceptedLanguages, true)) {
+              $this->setParam('Lang', $browserLanguage, true, false, 'eisodos::parameterHandler');
+            }
+          }
+        }
+      }
+      
       if (($this->neq('DEFLANG', '')) and ($this->eq('Lang', ''))) {
         $this->setParam('Lang', $this->getParam('DEFLANG'), true, false, 'eisodos::parameterHandler');
       }
