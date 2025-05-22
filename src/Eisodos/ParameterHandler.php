@@ -626,15 +626,19 @@
       
       /* in case no lang parameter defined and header recognition is on */
       if ($this->eq('Lang', '') && $this->isOn('LANGFROMHEADER')) {
-        $headers=Eisodos::$utils->get_request_headers();
-        if (array_key_exists('Accept-Language', $headers)) {
-          $browserLanguages = explode(',',explode(';', $headers['Accept-Language'])[0]);
-          $acceptedLanguages=explode(',',$this->getParam('LANGS'));
-          foreach ($browserLanguages as $browserLanguage) {
-            $browserLanguage = strtoupper(trim($browserLanguage));
-            if (in_array($browserLanguage, $acceptedLanguages, true)) {
-              $this->setParam('Lang', $browserLanguage, true, false, 'eisodos::parameterHandler');
-            }
+        $headers = Eisodos::$utils->get_request_headers();
+        $browserLanguages = [];
+        if ($this->neq('LANGHEADER', '') && array_key_exists($this->getParam('LANGHEADER'), $headers)) {
+          $browserLanguages = explode(',', $headers[$this->getParam('LANGHEADER')]);
+        }
+        if ($this->eq('LANGFROMHEADER', 'T') && array_key_exists('Accept-Language', $headers)) {
+          $browserLanguages = array_merge($browserLanguages, explode(',', explode(';', $headers['Accept-Language'])[0]));
+        }
+        $acceptedLanguages = explode(',', $this->getParam('LANGS'));
+        foreach ($browserLanguages as $browserLanguage) {
+          $browserLanguage = strtoupper(trim($browserLanguage));
+          if (in_array($browserLanguage, $acceptedLanguages, true)) {
+            $this->setParam('Lang', $browserLanguage, true, false, 'eisodos::parameterHandler');
           }
         }
       }
