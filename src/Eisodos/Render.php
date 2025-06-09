@@ -224,6 +224,7 @@
       }
       session_name(Eisodos::$applicationName);
       session_start();
+      $this->setParam("SessionJustStarted", "T");
       if ($regenerateSessionId_) {
         session_regenerate_id(true);
       }

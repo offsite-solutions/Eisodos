@@ -376,6 +376,7 @@
         }
         session_name(Eisodos::$applicationName);
         session_start();
+        $this->setParam("SessionJustStarted", "T");
       }
       // if the parameter was skipped in the parameter filter file, it must be skipped here too
       if (isset($_SESSION)) {

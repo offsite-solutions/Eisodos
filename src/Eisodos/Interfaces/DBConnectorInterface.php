@@ -101,7 +101,7 @@
      * @param bool $throwException_
      * @return int|bool Affected rows - false on error in case of exception didn't throw
      */
-    public function executePreparedDML(string $SQL_, $dataTypes_ = [], $data_ = [], $throwException_ = true): int|bool;
+    public function executePreparedDML(string $SQL_, $dataTypes_ = [], &$data_ = [], $throwException_ = true): int|bool;
     
     /**
      * Execute prepared DML
