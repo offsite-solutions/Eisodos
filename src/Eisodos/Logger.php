@@ -3,43 +3,43 @@
   namespace Eisodos;
   
   require_once('Utils.php');
-
+  
   use DateTime;
   use Eisodos\Abstracts\Singleton;
   use Exception;
   use Throwable;
   use PC;
   use Psr\Log\LoggerInterface;
-
+  
   final class Logger extends Singleton implements LoggerInterface {
     
     // Private variables
-    private $debugLog = [];
-  
+    private array $debugLog = [];
+    
     /**
      * @var array $debugLevels Debug level set
      */
-    private $debugLevels = [];
+    private array $debugLevels = [];
     /**
      * @var bool $_cliMode script running in CLI mode
      */
-    private $_cliMode = false;
-  
+    private bool $_cliMode = false;
+    
     // Public variables
     /**
      * @var int
      */
-    private $traceStep = 0;
-  
+    private int $traceStep = 0;
+    
     // Private functions
-  
+    
     /**
      * Generates log file
      * @param Throwable|null $throwable_
      * @param string $debugInformation_
      * @return string
      */
-    private function _generateFileLog(?Throwable $throwable_, $debugInformation_ = ''): string {
+    private function _generateFileLog(?Throwable $throwable_, string $debugInformation_ = ''): string {
       $st = "\n";
       $st .= '---------- ' . Eisodos::$applicationName . " ----------\n";
       $st .= date('Y.m.d. H:i:s') . "\n";
@@ -56,26 +56,30 @@
       }
       $st .= "----- Parameters -----\n";
       $st .= Eisodos::$parameterHandler->params2log();
+      $st .= "----- Headers -----\n";
+      foreach (Eisodos::$utils->get_request_headers() as $key => $value) {
+        $st .= $key . '=' . $value . "\n";
+      }
       if ($debugInformation_ !== '') {
         $st .= "----- Extended info -----\n";
         $st .= $debugInformation_;
       }
-  
+      
       return $st;
     }
-  
+    
     private function traceStep($text_, &$traceStep_) {
       switch ($text_) {
         case 'BEGIN':
           {
             $traceStep_ = max([0, $traceStep_++]);
-    
+            
             return 2 * $traceStep_;
           }
         case 'END':
           {
             $traceStep_ = max([0, --$traceStep_]);
-    
+            
             return 2 * $traceStep_;
           }
         default:
@@ -84,35 +88,36 @@
           }
       }
     }
-  
+    
     // Public functions
-  
+    
     /**
      * Logger initialization
-     * @param string $debugLevel_ Comma separated list of levels: error,info,warning,debug,trace,alert,emergency,notice
+     * @param array $options_ Array of debug levels: error,info,warning,debug,trace,alert,emergency,notice
      */
-    public function init($debugLevel_): void {
-      $this->setDebugLevels($debugLevel_);
+    public function init(array $options_): void {
+      $this->setDebugLevels($options_);
       $this->_cliMode = (PHP_SAPI === 'cli');
     }
-  
+    
     /** Sets debug level
-     * @param string $debugLevel_ trace,debug,info,notice,alert,warning,error,emergency,critical
+     * @param string $debugLevels_ trace,debug,info,notice,alert,warning,error,emergency,critical
      */
-    public function setDebugLevels(string $debugLevel_): void {
-      if (!$debugLevel_ || $debugLevel_ === '') {
+    public function setDebugLevels(array $debugLevels_): void {
+      if (count($debugLevels_) === 0) {
         return;
       }
-      if (strpos($debugLevel_, ',') !== false) {
-        $this->debugLevels = explode(',', $debugLevel_);
-        Eisodos::$parameterHandler->setParam("DebugLevels", $debugLevel_, false, false, 'eisodos::logger');
+      if (count($debugLevels_) > 1) {
+        $this->debugLevels = $debugLevels_;
+        Eisodos::$parameterHandler->setParam("DebugLevels", implode(',', $debugLevels_), false, false, 'eisodos::logger');
       } else {
+        $debugLevelsStr_ = implode(',', $debugLevels_);
         $levels = 'trace,debug,info,notice,alert,warning,error,emergency,critical';
-        $this->debugLevels = explode(',', substr($levels, strpos($levels, $debugLevel_)));
-        Eisodos::$parameterHandler->setParam("DebugLevels", substr($levels, strpos($levels, $debugLevel_)), false, false, 'eisodos::logger');
+        $this->debugLevels = explode(',', substr($levels, strpos($levels, $debugLevelsStr_)));
+        Eisodos::$parameterHandler->setParam("DebugLevels", substr($levels, strpos($levels, $debugLevelsStr_)), false, false, 'eisodos::logger');
       }
     }
-  
+    
     /**
      * Writes error log to file, mail, screen, callback
      * target can be set in config by ERROROUTPUT=file,mail,screen,"@callback"
@@ -152,7 +157,7 @@
           'eisodos::logger'
         );
       }
-    
+      
       $errorString = $this->_generateFileLog($throwable_, $debugInformation_);
       
       try {
@@ -175,9 +180,9 @@
       }
       
       try {
-        if (strpos(Eisodos::$parameterHandler->getParam('ERROROUTPUT'), 'Mail') !== false
-          and Eisodos::$parameterHandler->neq('ERRORMAILTO', '')
-          and Eisodos::$parameterHandler->neq('ERRORMAILFROM', '')) {
+        if (Eisodos::$parameterHandler->neq('ERRORMAILTO', '')
+          && Eisodos::$parameterHandler->neq('ERRORMAILFROM', '')
+          && strpos(Eisodos::$parameterHandler->getParam('ERROROUTPUT'), 'Mail') !== false) {
           $extraMails = $extraMails_;
           $extraMails[] = Eisodos::$parameterHandler->getParam('ERRORMAILTO');
           foreach ($extraMails as $row) {
@@ -194,8 +199,9 @@
       } catch (Exception $ex) {
       }
       
-      if (strpos(Eisodos::$parameterHandler->getParam('ERROROUTPUT'), 'Screen') !== false
-        and $this->_cliMode === false) {
+      if ($this->_cliMode === false
+        && strpos(Eisodos::$parameterHandler->getParam('ERROROUTPUT'), 'Screen') !== false
+      ) {
         Eisodos::$templateEngine->addToResponse(
           '<html lang="en"><meta content="text/html; charset=utf-8" http-equiv="Content-Type" /><body><pre>' . htmlspecialchars(
             $errorString
@@ -205,19 +211,22 @@
         Eisodos::$render->finish();
         exit;
       }
-  
-      if (strpos(Eisodos::$parameterHandler->getParam('ERROROUTPUT'), 'Screen') !== false
-        and $this->_cliMode === true) {
+      
+      if ($this->_cliMode === true
+        && strpos(Eisodos::$parameterHandler->getParam('ERROROUTPUT'), 'Screen') !== false
+      ) {
         print($errorString);
       }
-  
-      if (strpos(Eisodos::$parameterHandler->getParam('ERROROUTPUT'), 'Console') !== false
-        and $this->_cliMode === false) {
+      
+      if ($this->_cliMode === false
+        && strpos(Eisodos::$parameterHandler->getParam('ERROROUTPUT'), 'Console') !== false
+      ) {
         PC::debug($errorString);
       }
-  
-      if (strpos(Eisodos::$parameterHandler->getParam('ERROROUTPUT'), 'Console') !== false
-        and $this->_cliMode === true) {
+      
+      if ($this->_cliMode === true
+        && strpos(Eisodos::$parameterHandler->getParam('ERROROUTPUT'), 'Console') !== false
+      ) {
         print($errorString);
       }
     }
@@ -229,10 +238,10 @@
      * @param object|null $sender_ Sender object
      */
     public function log($text_, $debugLevel_ = 'debug', $sender_ = NULL): void {
-  
+      
       if (in_array($debugLevel_, $this->debugLevels, false)) {
         $dbt = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3);
-    
+        
         if (array_key_exists(2, $dbt)) {
           $functionName = Eisodos::$utils->safe_array_value($dbt[2], 'function');
           $className = Eisodos::$utils->safe_array_value($dbt[2], 'class');
@@ -257,7 +266,7 @@
             ' ',
             $this->traceStep($text_, $this->traceStep)
           ) . $text_;
-    
+        
         if ($this->_cliMode) {
           echo($debugText . PHP_EOL);
         } else if (class_exists('PC', false)) {
@@ -267,11 +276,11 @@
         }
       }
     }
-  
+    
     public function getDebugLog(): array {
       return $this->debugLog;
     }
-  
+    
     /**
      * Log a critical message
      *
@@ -281,7 +290,7 @@
     public function critical($text_, $sender_ = NULL): void {
       $this->log($text_, 'critical', $sender_);
     }
-  
+    
     /**
      * Log an error message
      *

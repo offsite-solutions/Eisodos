@@ -8,7 +8,7 @@
   use Mail_mime;
   use PC;
   use PEAR;
-
+  
   final class Mailer extends Singleton {
     
     // Private variables
@@ -44,7 +44,7 @@
             'eol' => "\n"
           )
         );
-  
+        
         $message->setHTMLBody($body_);
         $extraHeaders = array(
           'From' => $from_,
@@ -74,14 +74,18 @@
         
       } catch (Exception $e) {
         PC::debug($e->getMessage());
+        try {
+          if (Eisodos::$parameterHandler->neq('MAILLOG', '')) {
+            $file = fopen(Eisodos::$parameterHandler->getParam('MAILLOG'), 'ab+');
+            fwrite($file, "---- " . date('Y-m-d H:i:s') . " ----\n");
+            fwrite($file, $e->getMessage() . "\n");
+            fclose($file);
+          }
+        } catch (Exception $e) {
         
-        return $e->getMessage();
-      }
-      
-      if (isset($mail)) {
+        }
+      } finally {
         unset($mail);
-      }
-      if (isset($message)) {
         unset($message);
       }
       
@@ -105,7 +109,7 @@
             'eol' => "\n"
           )
         );
-  
+        
         $message->setHTMLBody($body_);
         foreach ($filesToAttach_ as $f) {
           $message->addAttachment($f);
@@ -161,16 +165,16 @@
      */
     public function utf8_html_mail_params_attachment_batch(
       TemplateEngine $templateEngine_,
-      array $to_,
-      string $subject_,
-      string $bodyTemplate_,
-      string $from_,
-      $filesToAttach_ = array(),
-      $batch_loopCount_ = 50,
-      $batch_waitBetweenLoops_ = 60,
-      $batch_echo_ = false,
-      $batch_skip_ = 0,
-      $testOnly_ = false
+      array          $to_,
+      string         $subject_,
+      string         $bodyTemplate_,
+      string         $from_,
+      array          $filesToAttach_ = array(),
+      int            $batch_loopCount_ = 50,
+      int            $batch_waitBetweenLoops_ = 60,
+      bool           $batch_echo_ = false,
+      int            $batch_skip_ = 0,
+      bool           $testOnly_ = false
     ): string {
       $log = '';
       $num = 0;

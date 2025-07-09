@@ -13,7 +13,7 @@
      *
      * @var static $instances instances
      */
-    protected static $instances;
+    protected static Singleton $instances;
     
     /**
      * is not allowed to call from outside to prevent from creating multiple instances,

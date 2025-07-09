@@ -6,7 +6,7 @@
   use Eisodos\Interfaces\ParserInterface;
   use Exception;
   use PC;
-
+  
   /**
    * Class Translator
    * @package Eisodos
@@ -15,35 +15,35 @@
     
     // Private variables
     
-    public $userLanguageIDs = array();
-    private
-      $_languageIDs = array(),
-      $_languageIDsCRC = 0,
-      $_languageIDsFileError = false;
+    public array $userLanguageIDs = array();
+    
+    private bool $_languageIDsFileError = false;
+    private int $_languageIDsCRC = 0;
+    private array $_languageIDs = array();
     
     // Public variables
     /**
      * @var bool
      */
-    private $_collectLangIDs;
-  
+    private bool $_collectLangIDs;
+    
     // Private functions
-  
+    
     /**
      * Translation initialization
      * @param array $options_
      * @return void
      * @throws Exception
      */
-    public function init($options_ = []): void {
+    public function init(array $options_ = []): void {
       $this->_collectLangIDs = Eisodos::$parameterHandler->isOn('COLLECTLANGIDS');
-  
+      
       // loading translate file
       $this->loadMasterLanguageFile();
-  
+      
       // loading user editable translate file
       $this->_loadUserLanguageFile();
-  
+      
       // register as Parser
       Eisodos::$templateEngine->registerParser($this);
     }
@@ -54,18 +54,18 @@
      * Loads master (generated) language file
      * @param bool $forceCollection_
      */
-    public function loadMasterLanguageFile($forceCollection_ = false): void {
+    public function loadMasterLanguageFile(bool $forceCollection_ = false): void {
       if ($forceCollection_) {
         Eisodos::$parameterHandler->setParam('COLLECTLANGIDS', 'T', false, false, 'eisodos::translator');
         $this->_collectLangIDs = true;
       }
       if (Eisodos::$parameterHandler->neq('LANGIDFILE', '')
-        and Eisodos::$parameterHandler->neq('Langs', '')
-        and file_exists(Eisodos::$parameterHandler->getParam('LANGIDFILE'))) {
+        && Eisodos::$parameterHandler->neq('Langs', '')
+        && file_exists(Eisodos::$parameterHandler->getParam('LANGIDFILE'))) {
         $file = fopen(Eisodos::$parameterHandler->getParam('LANGIDFILE'), 'rb');
         if (!($file === false)
-          and (Eisodos::$parameterHandler->isOn('COLLECTLANGIDS')
-            or flock($file, LOCK_EX))) {
+          && (Eisodos::$parameterHandler->isOn('COLLECTLANGIDS')
+            || flock($file, LOCK_EX))) {
           while (!feof($file)) {
             $line = rtrim(fgets($file));
             if ($line === '') {
@@ -95,8 +95,8 @@
      */
     private function _loadUserLanguageFile(): void {
       if (Eisodos::$parameterHandler->neq('USERLANGIDFILE', '')
-        and Eisodos::$parameterHandler->neq('Langs', '')
-        and file_exists(Eisodos::$parameterHandler->getParam('USERLANGIDFILE'))) {
+        && Eisodos::$parameterHandler->neq('Langs', '')
+        && file_exists(Eisodos::$parameterHandler->getParam('USERLANGIDFILE'))) {
         $file = fopen(Eisodos::$parameterHandler->getParam('USERLANGIDFILE'), 'rb');
         if (!($file === false)) {
           while (!feof($file)) {
@@ -119,7 +119,7 @@
     public function getLanguageIDs(): array {
       $r = array();
       foreach ($this->_languageIDs as $key => $row) {
-        if (!strpos($key, '.#') and !array_key_exists(substr($key, 0, -3), $r)) {
+        if (!strpos($key, '.#') && !array_key_exists(substr($key, 0, -3), $r)) {
           $r[substr($key, 0, -3)] = '';
         }
       }
@@ -133,7 +133,7 @@
      * @param bool $userEdited
      * @return string
      */
-    public function getLangTextForTranslate($languageID_, $language, $userEdited = true): string {
+    public function getLangTextForTranslate($languageID_, $language, bool $userEdited = true): string {
       $languageID_ = strtoupper($languageID_);
       $language = strtoupper($language);
       if ($userEdited) {
@@ -159,14 +159,14 @@
      * @param bool $findHashmarked_ Give back hashmarked (default) translation if no translation found
      * @return string
      */
-    public function translateText(string $text_, $findHashmarked_ = false): string {
+    public function translateText(string $text_, bool $findHashmarked_ = false): string {
       $loopCountLimit = (integer)Eisodos::$parameterHandler->getParam('LOOPCOUNT', '1000');
       $LoopCount = 0;
       while ((Eisodos::$parameterHandler->neq('LANGS', '')
           and strpos($text_, '[:') !== false)
         and $LoopCount <= $loopCountLimit) {
         $translatepos = strpos($text_, '[:');
-  
+        
         $text_ = Eisodos::$utils->replace_all(
           $text_,
           substr($text_, $translatepos, strpos($text_, ':]') - $translatepos + 2),
@@ -187,7 +187,7 @@
      * @param bool $findHashmarked_
      * @return string
      */
-    public function explodeLangText($languageFormat_, $findHashmarked_ = false): string {
+    public function explodeLangText($languageFormat_, bool $findHashmarked_ = false): string {
       $p = explode(':', $languageFormat_);
       
       return Eisodos::$translator->getLangText($p[0], explode(';', (count($p) === 1 ? '' : $p[1])), $findHashmarked_);
@@ -200,7 +200,7 @@
      * @param bool $findHashmarked_ Gives back hashmarked (default text) translation if no translation found
      * @return string
      */
-    public function getLangText(string $languageID_, $textParams_ = array(), $findHashmarked_ = false): string {
+    public function getLangText(string $languageID_, array $textParams_ = array(), bool $findHashmarked_ = false): string {
       if (strpos($languageID_, ',') !== false) {
         [$languageID_, $defText] = explode(',', $languageID_, 2);
       } else {
@@ -229,7 +229,7 @@
           $this->_languageIDs[$languageID_ . '.#'] = $defText;
         }
       }
-      if ($defText === '' and $findHashmarked_) {
+      if ($defText === '' && $findHashmarked_) {
         $defText = Eisodos::$utils->safe_array_value($this->_languageIDs, $languageID_ . '.#');
       }
       if (Eisodos::$parameterHandler->isOn('SHOWLANGIDS')) {
@@ -253,13 +253,13 @@
         $textParams_
       );
     }
-  
+    
     public function finish(): void {
-      if (Eisodos::$parameterHandler->neq('LANGIDFILE', '')
-        and Eisodos::$parameterHandler->neq('LANGS', '')
-        and Eisodos::$parameterHandler->isOn('COLLECTLANGIDS')
-        and $this->_languageIDsFileError === false
-        and $this->_languageIDsCRC !== crc32(print_r($this->_languageIDs, true))
+      if ($this->_languageIDsFileError === false
+        && Eisodos::$parameterHandler->neq('LANGIDFILE', '')
+        && Eisodos::$parameterHandler->neq('LANGS', '')
+        && Eisodos::$parameterHandler->isOn('COLLECTLANGIDS')
+        && $this->_languageIDsCRC !== crc32(print_r($this->_languageIDs, true))
       ) {
         $file = fopen(Eisodos::$parameterHandler->getParam('LANGIDFILE'), 'wb');
         if (flock($file, LOCK_EX)) {
@@ -293,15 +293,13 @@
      * @inheritDoc
      */
     public function parse(string $text_, $blockPosition_ = false): string {
-      $text_ = Eisodos::$utils->replace_all(
+      return Eisodos::$utils->replace_all(
         $text_,
         substr($text_, $blockPosition_, strpos($text_, ':]') - $blockPosition_ + 2),
         $this->explodeLangText(
           substr($text_, $blockPosition_ + 2, strpos($text_, ':]') - $blockPosition_ - 2)
         )
       );
-  
-      return $text_;
     }
     
     /** @inheritDoc */

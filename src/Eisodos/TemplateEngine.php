@@ -6,7 +6,7 @@
   use Eisodos\Interfaces\ParserInterface;
   use Exception;
   use RuntimeException;
-
+  
   class TemplateEngine extends Singleton {
     
     // Private properties
@@ -14,18 +14,18 @@
     /**
      * @var string Default callback function name
      */
-    public $defaultCallbackFunctionName = '';
+    public string $defaultCallbackFunctionName = '';
     /**
      * @var array Template cache
      */
-    private $_templateCache = [];
+    private array $_templateCache = [];
     
     // Public properties
     /**
      * Registered template block parsers
      * @var array
      */
-    private $_registeredParsers = [];
+    private array $_registeredParsers = [];
     
     // Private function
     
@@ -49,11 +49,11 @@
      */
     public function getMultiTemplate(
       array $templateID_,
-      $listOfValuePairs_ = array(),
-      $addResultToResponse_ = true,
-      $disableParsing_ = false,
-      $disableLanguageTagParsing_ = false,
-      $templateRow_ = -1
+      array $listOfValuePairs_ = array(),
+      bool  $addResultToResponse_ = true,
+      bool  $disableParsing_ = false,
+      bool  $disableLanguageTagParsing_ = false,
+      int   $templateRow_ = -1
     ): string {
       $result = '';
       foreach ($templateID_ as $v) {
@@ -73,23 +73,25 @@
     }
     
     /**
-     * @param $templateText_
+     * @param string $templateText_
      * @param array $listOfValuePairs_
      * @param bool $addResultToResponse_
      * @param string $variablePrefix_
      * @return string
      */
     public function parseTemplateText(
-      $templateText_,
-      $listOfValuePairs_ = array(),
-      $addResultToResponse_ = true,
-      $variablePrefix_ = ''
+      string $templateText_,
+      array  $listOfValuePairs_ = array(),
+      bool   $addResultToResponse_ = true,
+      string $variablePrefix_ = ''
     ): string {
       $Page = '';
+      $commentMark = Eisodos::$parameterHandler->getParam('COMMENTMARK', '##');
+      $editorMode = Eisodos::$parameterHandler->isOn('EditorMode');
       foreach (explode("\n", $templateText_) as $line) {
-        if (Eisodos::$parameterHandler->isOn('EditorMode') // remove line ends starting with comment mark (##)
-          and strpos($line, Eisodos::$parameterHandler->getParam('COMMENTMARK', '##')) !== false) {
-          $line = substr($line, 0, strpos($line, Eisodos::$parameterHandler->getParam('COMMENTMARK', '##')));
+        if ($editorMode // remove line ends starting with comment mark (##)
+          && strpos($line, $commentMark) !== false) {
+          $line = substr($line, 0, strpos($line, $commentMark));
           if ($line === '') {
             continue;
           }
@@ -134,16 +136,16 @@
      */
     public function registerParser(ParserInterface $parser_): void {
       if ($parser_->openTag() === ''
-        or $parser_->closeTag() === '') {
+        || $parser_->closeTag() === '') {
         throw new RuntimeException('Open and close tags are mandatory');
       }
       foreach ($this->_registeredParsers as $parser) {
         if (strpos($parser->openTag(), $parser_->openTag()) !== false
-          or strpos($parser_->openTag(), $parser->openTag()) !== false) {
+          || strpos($parser_->openTag(), $parser->openTag()) !== false) {
           throw new RuntimeException('Open tag already registered!');
         }
         if (strpos($parser->closeTag(), $parser_->closeTag()) !== false
-          or strpos($parser_->closeTag(), $parser->closeTag()) !== false) {
+          || strpos($parser_->closeTag(), $parser->closeTag()) !== false) {
           throw new RuntimeException('Close tag already registered!');
         }
       }
@@ -153,7 +155,7 @@
     // Public functions
     
     /**
-     * @param $templateID_
+     * @param string $templateID_
      * @param array $listOfValuePairs_
      * @param bool $addResultToResponse_
      * @param bool $disableParsing_
@@ -163,24 +165,23 @@
      * @return bool|mixed|string
      */
     private function _getTemplate(
-      $templateID_,
-      $listOfValuePairs_ = array(),
-      $addResultToResponse_ = true,
-      $disableParsing_ = false,
-      $disableLanguageTagParsing_ = false,
-      $templateRow_ = -1,
-      $raiseOnMissingTemplate_ = false
+      string $templateID_,
+      array  $listOfValuePairs_ = array(),
+      bool   $addResultToResponse_ = true,
+      bool   $disableParsing_ = false,
+      bool   $disableLanguageTagParsing_ = false,
+      int    $templateRow_ = -1,
+      bool   $raiseOnMissingTemplate_ = false
     ) {
-      // Eisodos::$logger->trace('BEGIN', $this);
       $Page = '';
       if ($templateID_ === '') {
         return '';
       }
-  
-      if (isset($this->_templateCache[$templateID_]) and !Eisodos::$parameterHandler->isOn('EditorMode')) {
+      
+      if (isset($this->_templateCache[$templateID_]) && !Eisodos::$parameterHandler->isOn('EditorMode')) {
         $Page = $this->_templateCache[$templateID_];
       }
-  
+      
       if (($disableLanguageTagParsing_ === false)
         && (Eisodos::$parameterHandler->isOn('MULTILANG'))
         && !Eisodos::$parameterHandler->isOn('EditorMode')) {
@@ -207,7 +208,7 @@
       
       if ($Page === '') {
         if (strpos($templateDir, 'http://') === false
-          and strpos($templateDir, 'https://') === false) {
+          && strpos($templateDir, 'https://') === false) {
           if (file_exists($templateDir . $LangSpec . $templateID_ . '.template')) {
             $TemplateFile = $templateDir . $LangSpec . $templateID_ . '.template';
           } elseif (Eisodos::$parameterHandler->neq('DEFTEMPLATELANG', '')) {
@@ -232,7 +233,7 @@
           while (!feof($file)) {
             $line = rtrim(fgets($file));
             if (!Eisodos::$parameterHandler->isOn('EditorMode')
-              and strpos($line, Eisodos::$parameterHandler->getParam('COMMENTMARK', '##')) !== false) {
+              && strpos($line, Eisodos::$parameterHandler->getParam('COMMENTMARK', '##')) !== false) {
               $line = substr(
                 $line,
                 0,
@@ -245,7 +246,7 @@
             $cLine++;
             if ($disableParsing_ === false) {
               if ($templateRow_ === -1) {
-                if (!(($cLine === 1) and feof($file))) {
+                if (!(($cLine === 1) && feof($file))) {
                   $Page .= $line . PHP_EOL;
                 } else {
                   $Page .= $line . ' ';
@@ -302,7 +303,7 @@
      * @param bool $disableParsing_
      * @return mixed|string
      */
-    public function parse(string $text_, $listOfValuePairs_ = array(), $disableParsing_ = false): string {
+    public function parse(string $text_, array $listOfValuePairs_ = array(), bool $disableParsing_ = false): string {
       $loopCountLimit = (integer)Eisodos::$parameterHandler->getParam('LOOPCOUNT', '1000');
       
       if (!$listOfValuePairs_) {
@@ -358,8 +359,8 @@
       $foundParser = NULL;
       foreach ($this->_registeredParsers as $parser) {
         if (($parser->enabled()
-            and ($position = strpos($text_, $parser->openTag())) !== false)
-          and $position < $foundPosition) {
+            && ($position = strpos($text_, $parser->openTag())) !== false)
+          && $position < $foundPosition) {
           $foundPosition = $position;
           $foundParser = $parser;
         }
@@ -377,6 +378,7 @@
     private function _getParameterPos(string $text_, string &$match_) {
       $matches = array();
       if (preg_match('/\$[\w]+/', $text_, $matches, PREG_OFFSET_CAPTURE)) {
+        // TODO jo ez igy?
         if (isset($match_)) {
           $match_ = $matches[0][0];
         }
@@ -410,7 +412,7 @@
           $paramValue = substr($pageAfterParam, 0, strpos($pageAfterParam, "'"));        // value
           Eisodos::$parameterHandler->setParam($paramName, $paramValue);
           $pageAfterParam = substr($result, $EndPos + 3 + strlen($paramValue) + 1);
-          if (($pageAfterParam !== '') and ($pageAfterParam[0] = ';')) {                      // if there is closing ; (it must be) then cut it
+          if (($pageAfterParam !== '') && ($pageAfterParam[0] = ';')) {                      // if there is closing ; (it must be) then cut it
             $pageAfterParam = substr($pageAfterParam, 1);
           }
           $result = $pageBeforeParam . $pageAfterParam;
@@ -418,7 +420,7 @@
           $pageAfterParam = substr($result, $EndPos + 3);
           $paramDefaultValue = substr($pageAfterParam, 0, strpos($pageAfterParam, "'"));
           $pageAfterParam = substr($result, $EndPos + 3 + strlen($paramDefaultValue) + 1);
-          if (($pageAfterParam !== '') and ($pageAfterParam[0] = ';')) {
+          if (($pageAfterParam !== '') && ($pageAfterParam[0] = ';')) {
             $pageAfterParam = substr($pageAfterParam, 1);
           }
           if (($paramValue = Eisodos::$parameterHandler->getParam($paramName)) === '') {
@@ -520,12 +522,12 @@
      */
     public function getTemplate(
       string $templateID_,
-      $listOfValuePairs_ = array(),
-      $addResultToResponse_ = true,
-      $disableParsing_ = false,
-      $disableLanguageTagParsing_ = false,
-      $templateRow_ = -1,
-      $raiseOnMissingTemplate_ = false
+      array  $listOfValuePairs_ = array(),
+      bool   $addResultToResponse_ = true,
+      bool   $disableParsing_ = false,
+      bool   $disableLanguageTagParsing_ = false,
+      int    $templateRow_ = -1,
+      bool   $raiseOnMissingTemplate_ = false
     ) {
       $result = '';
       if (!Eisodos::$parameterHandler->isOn('EditorMode')) {

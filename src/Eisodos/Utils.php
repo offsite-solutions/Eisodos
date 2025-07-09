@@ -4,25 +4,35 @@
   
   use Eisodos\Abstracts\Singleton;
   use Exception;
-
-  class Utils extends Singleton {
   
+  class Utils extends Singleton {
+    
     /**
      * Gives back an array value if exists. If it is an empty string or null it gives back the default value
-     * @param array $array_
+     * @param array|null $array_
      * @param string $key_
      * @param string $defaultValue_
+     * @param bool $caseInsensitive_
      * @return string
      */
-    public function safe_array_value(array $array_, string $key_, $defaultValue_ = ''): string {
-      if (isset($array_) and array_key_exists($key_, $array_)) {
+    public function safe_array_value(?array $array_, string $key_, string $defaultValue_ = '', bool $caseInsensitive_ = false): string {
+      if (!is_array($array_)) {
+        return $defaultValue_;
+      }
+      
+      if ($caseInsensitive_) {
+        $array_ = array_change_key_case($array_);
+        $key_ = strtolower($key_);
+      }
+      
+      if (array_key_exists($key_, $array_)) {
         if ($array_[$key_] === '') {
           return $defaultValue_;
         }
-      
+        
         return (string)$array_[$key_];
       }
-    
+      
       return $defaultValue_;
     }
     
@@ -50,7 +60,7 @@
      * @param bool $allowNegative
      * @return bool
      */
-    public function isInteger($mixed, $allowNegative = false): bool {
+    public function isInteger($mixed, bool $allowNegative = false): bool {
       if ($allowNegative) {
         return (preg_match('/^-?\d*$/', $mixed) === 1);
       }
@@ -63,7 +73,7 @@
      * @param bool $allowNegative
      * @return bool
      */
-    public function isFloat($mixed, $allowNegative = false): bool {
+    public function isFloat($mixed, bool $allowNegative = false): bool {
       if ($allowNegative) {
         return (preg_match('/^-?\d*\.?\d*$/', $mixed) === 1);
       }
@@ -99,7 +109,7 @@
      * @param array $listOfValuePairs_
      * @return mixed|string
      */
-    public function ODecode($listOfValuePairs_ = array()): string {
+    public function ODecode(array $listOfValuePairs_ = []): string {
       if (count($listOfValuePairs_) % 2 !== 0) {
         $listOfValuePairs_[] = '';
       }
@@ -134,20 +144,19 @@
      * @param bool $NoCase
      * @return string
      */
-    public function replace_all($InString, $SearchFor, $ReplaceTo, $All = true, $NoCase = true): string {
-      if (($NoCase === true) and ($All === true)) {
+    public function replace_all($InString, $SearchFor, $ReplaceTo, bool $All = true, bool $NoCase = true): string {
+      if (($NoCase === true) && ($All === true)) {
         return str_ireplace($SearchFor, $ReplaceTo, $InString);
       }
       
-      if (($NoCase === false) and ($All === true)) {
+      if (($NoCase === false) && ($All === true)) {
         return str_replace($SearchFor, $ReplaceTo, $InString);
       }
       
-      if (($NoCase === false) and ($All === false)) {
+      if (($NoCase === false) && ($All === false)) {
         return $this->str_replace_count($SearchFor, $ReplaceTo, $InString, 1);
       }
       
-      // if (($NoCase == true) and ($All == false))
       return $this->str_ireplace_count($SearchFor, $ReplaceTo, $InString, 1);
     }
     
@@ -210,15 +219,21 @@
       // noop
     }
     
-    private function apache_request_headers() {
+    /**
+     * Replacement for built-in function apache_request_headers
+     * @return array
+     */
+    private function apache_request_headers(): array {
       $arh = array();
       $rx_http = '/\AHTTP_/';
       foreach ($_SERVER as $key => $val) {
         if (preg_match($rx_http, $key)) {
           $arh_key = preg_replace($rx_http, '', $key);
           $rx_matches = explode('_', $arh_key);
-          if (count($rx_matches) > 0 and strlen($arh_key) > 2) {
-            foreach ($rx_matches as $ak_key => $ak_val) $rx_matches[$ak_key] = ucfirst($ak_val);
+          if (count($rx_matches) > 0 && strlen($arh_key) > 2) {
+            foreach ($rx_matches as $ak_key => $ak_val) {
+              $rx_matches[$ak_key] = ucfirst($ak_val);
+            }
             $arh_key = implode('-', $rx_matches);
           }
           $arh[$arh_key] = $val;

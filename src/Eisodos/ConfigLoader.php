@@ -5,7 +5,7 @@
   use Eisodos\Abstracts\Singleton;
   use Exception;
   use PC;
-
+  
   /*
    * TODO: (low) config file editor
    * TODO: (critical) same handling of INI type's (T,"true",F,"false",empty) and JSON type's (true,false,null) values
@@ -52,7 +52,7 @@
      * @var array
      */
     private array $_activeVersions;
-  
+    
     /**
      * ConfigLoader initializer
      * @param array $options_ =[
@@ -66,7 +66,7 @@
      * @return void
      */
     public function init(
-      $options_ = []
+      array $options_ = []
     ): void {
       Eisodos::$logger->trace('BEGIN', $this);
       
@@ -88,11 +88,11 @@
       } elseif (array_key_exists('environment', $options_)) {
         $this->_environment = $options_['environment'] . '-';
       } else {
-        $this->_environment = getenv(Eisodos::$applicationName . '_ENVIRONMENT');
-        if ($this->_environment === false || $this->_environment == '') {
+        $environment = getenv(Eisodos::$applicationName . '_ENVIRONMENT');
+        if ($environment === false || $environment === '') {
           $this->_environment = '';
         } else {
-          $this->_environment .= '-';
+          $this->_environment = '-' . $environment;
         }
       }
       
@@ -149,7 +149,7 @@
         }
       }
     }
-  
+    
     /**
      * Loads configuration file values to an array
      * @param string $section_ Section
@@ -157,15 +157,15 @@
      * @param string $configFile_ Configuration file's name
      * @return string|bool
      */
-    private function _readSection(string $section_, &$array_ = array(), $configFile_ = ''): string {
+    private function _readSection(string $section_, array &$array_ = array(), string $configFile_ = ''): string {
       if ($section_ === '') {
         return false;
       }
-  
+      
       $section_ = strtolower($section_);
       $comment = '#';
       $group = '';
-  
+      
       $extension = $this->_getExtension();
       
       /*
@@ -190,7 +190,7 @@
       
       // check if config file already in the cache
       if (array_key_exists($configFile, $this->_configCache)
-        and array_key_exists($section_, $this->_configCache[$configFile])) {
+        && array_key_exists($section_, $this->_configCache[$configFile])) {
         $array_ = $this->_configCache[$configFile][$section_];
       }
       
@@ -199,7 +199,7 @@
         while (!@feof($fp)) {
           $line = trim(@fgets($fp));
           // skipping commented or empty lines
-          if ($line and $line[0] !== $comment) {
+          if ($line && $line[0] !== $comment) {
             // section pattern [section]
             if (preg_match('/^\[.*]$/', $line)) {
               $group = strtolower(substr($line, 1, -1));
@@ -236,12 +236,12 @@
         } catch (Exception $e) {
         }
       }
-  
+      
       $source = basename($configFile) . ':' . $section_;
       $listOfConfigFiles = Eisodos::$parameterHandler->getParam('ConfigFiles');
       Eisodos::$parameterHandler->setParam(
         'ConfigFiles', $listOfConfigFiles . ($listOfConfigFiles === '' ? '' : ';') . $source, false, false, 'eisodos::configLoader');
-  
+      
       return $source;
     }
     
@@ -251,7 +251,7 @@
      * Loads basic configuration
      * @param array $configOverwrites_
      */
-    private function _loadMainConfiguration($configOverwrites_ = array()): void {
+    private function _loadMainConfiguration(array $configOverwrites_ = array()): void {
       Eisodos::$logger->trace('BEGIN', $this);
       
       $PreInclude = array();
@@ -259,9 +259,9 @@
       
       // loading config files set in [PreInclude] section
       $this->_readSection('PreInclude', $PreInclude);
-      foreach ($PreInclude as $n => $v) {
+      foreach ($PreInclude as $v) {
         $x = explode(':', $v);
-        if (count($x) > 1 and $x[1] !== '') {
+        if (count($x) > 1 && $x[1] !== '') {
           $this->importConfigSection($x[1], $x[0]);
         }
       }
@@ -290,9 +290,9 @@
       
       // loading config files set in [PostInclude] section
       $this->_readSection('PostInclude', $PostInclude);
-      foreach ($PostInclude as $n => $v) {
+      foreach ($PostInclude as $v) {
         $x = explode(':', $v);
-        if (count($x) > 1 and $x[1] !== '') {
+        if (count($x) > 1 && $x[1] !== '') {
           $this->importConfigSection($x[1], $x[0]);
         }
       }
@@ -301,10 +301,10 @@
       foreach ($configOverwrites_ as $key => $value) {
         Eisodos::$parameterHandler->setParam($key, $value, false, false, 'ConfigOverwrite');
       }
-  
+      
       Eisodos::$logger->trace('END', $this);
     }
-  
+    
     /**
      * Loads configuration file's section to the parameters array
      * @param string $section_ Section of the configuration file [SECTION_NAME]
@@ -313,7 +313,7 @@
      * @return array Read and parsed key-value pairs
      */
     public
-    function importConfigSection(string $section_, $configFile_ = '', $addToParameters_ = true): array {
+    function importConfigSection(string $section_, string $configFile_ = '', bool $addToParameters_ = true): array {
       $L = array();
       $source = $this->_readSection($section_, $L, $configFile_);
       foreach ($L as $key => $val) {
@@ -331,10 +331,10 @@
         }
         $L[$key] = $val;
       }
-  
+      
       return $L;
     }
-  
+    
     public
     function initVersioning($developerVersion_): void {
       if ($developerVersion_ !== '') {
@@ -344,9 +344,9 @@
         $this->_activeVersionsString = $developerVersion_ . ($this->_activeVersionsString === '' ? '' : ',') . $this->_activeVersionsString;  // hozzafuzes az activeversionhoz
       }
       $this->_activeVersionsString .= ',';
-    
+      
       $this->_activeVersions = explode(',', $this->_activeVersionsString);
-    
+      
       // _activeVersions array contains the version prefixes, ex: v3., v2., empty
       Eisodos::$parameterHandler->setParam('AppVersion', $this->_activeVersions[0], false, false, 'eisodos::configLoader');
       foreach ($this->_activeVersions as &$row) {
@@ -355,7 +355,7 @@
         }
       }
     }
-  
+    
     public
     function loadParameterFilters(&$parameterFilters_): void {
       $parameterFilterFilename = '';
@@ -370,12 +370,12 @@
       } elseif (file_exists($this->_configPath . DIRECTORY_SEPARATOR . Eisodos::$applicationName . '.params')) {
         $parameterFilterFilename = $this->_configPath . DIRECTORY_SEPARATOR . Eisodos::$applicationName . '.params';
       }
-    
+      
       if ($parameterFilterFilename !== '') {
         $parameterFilters_ = explode("\n", file_get_contents($parameterFilterFilename));
       }
     }
-  
+    
     public
     function getActiveVersions(): array {
       return $this->_activeVersions;
