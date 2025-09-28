@@ -1,16 +1,12 @@
 # Eisodos framework
 
 ## Prerequisites
-- PHP 7.4.x
+- PHP 8.4.x
 - Packages
   - ext-mbstring
   - ext-bcmath
   - ext-json
   - psr/log
-  - php-console/php-console
-  - PEAR packages (will be replaced in future releases)
-    - pear/mail
-    - pear/mail_mime
 
 ## Installation
 ```
