@@ -1,6 +1,7 @@
 {
   "name": "offsite-solutions/eisodos",
   "description": "Page generator engine",
+  "x-last-update": "2025-09-28",
   "type": "library",
   "authors": [
     {
@@ -12,22 +13,16 @@
     {
       "type": "composer",
       "url": "https://plugins.roundcube.net"
-    },
-    {
-      "type": "pear",
-      "url": "https://pear.php.net"
     }
   ],
-  "minimum-stability": "dev",
+  "minimum-stability": "stable",
   "require": {
-    "php": ">=7.4",
+    "php": ">=8.3",
     "ext-mbstring": "*",
     "ext-bcmath": "*",
     "ext-json": "*",
-    "psr/log": "^1.0",
-    "php-console/php-console": "^3.1",
-    "pear/mail": "*",
-    "pear/mail_mime": "*"
+    "psr/log": "*",
+    "phpmailer/phpmailer": "*"
   },
   "require-dev": {
   },

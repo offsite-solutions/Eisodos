@@ -41,8 +41,8 @@
      * @param int|string|null $index_ connector object's index
      * @return DBConnectorInterface DB Connector object
      */
-    public function db($index_ = NULL): DBConnectorInterface {
-      return $this->connector((int)$index_);
+    public function db(int|string $index_ = NULL) {
+      return $this->connector(($index_));
     }
     
     /**
@@ -50,7 +50,7 @@
      * @param int|string|null $index_ connector object's index, if empty gives back the first connector
      * @return DBConnectorInterface DB Connector object
      */
-    public function connector($index_ = NULL): DBConnectorInterface {
+    public function connector(int|string $index_ = NULL) {
       if ($index_ === NULL || $index_ === '') {
         return $this->_dbConnectors[0];
       }

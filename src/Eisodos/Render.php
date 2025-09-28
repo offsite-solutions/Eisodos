@@ -4,8 +4,6 @@
   
   use Eisodos\Abstracts\Singleton;
   use Exception;
-  use PC;
-  use PhpConsole;
   
   /**
    * Class Application - Manages classes, creation and initialization orders, page generation
@@ -73,61 +71,55 @@
      * @param array $templateEngineOptions_ =[
      *
      *     ] Template engine options
-     * @param string $debugLevel_ debugLevel can be 'critical'|'error'|'debug'|'info'|'warning'|'trace'
+     * @param string $logLevel_ debugLevel can be 'critical'|'error'|'debug'|'info'|'warning'|'trace'
      * @throws Exception
      */
     public function start(
       array  $configOptions_,
       array  $cacheOptions_ = [],
       array  $templateEngineOptions_ = [],
-      string $debugLevel_ = ''
+      string $logLevel_ = ''
     ): void {
       $this->_scriptStartTime = microtime(true);               // script start time
       if (!Eisodos::$applicationName) {
         die('Application name is missing');
       }
       
-      Eisodos::$logger->init($debugLevel_);
+      Eisodos::$logger->init(['logLevel'=>$logLevel_]);
       Eisodos::$logger->trace('BEGIN', $this);
       
       ob_start();
       
       Eisodos::$configLoader->init($configOptions_);
       // override initial errorlevel from configuration
-      Eisodos::$logger->setDebugLevels(Eisodos::$parameterHandler->getParam('DebugLevel'));
+      Eisodos::$logger->setDebugLevels();
       Eisodos::$mailer->init();
       Eisodos::$translator->init();
       Eisodos::$parameterHandler->init();
       
       Eisodos::$logger->trace('Objects initialized', $this);
       
-      if (Eisodos::$parameterHandler->getParam('DEBUGGERSTORAGE') !== '') {
-        PhpConsole\Connector::setPostponeStorage(
-          new PhpConsole\Storage\File(Eisodos::$parameterHandler->getParam('DEBUGGERSTORAGE'))
-        );
-      }
-      
       // check if URL contains debugparameters
-      if (($debugURLPrefix = Eisodos::$parameterHandler->getParam("DEBUGURLPREFIX", "")) !== '') {
-        if (Eisodos::$parameterHandler->neq("SessionDebugLevel", "") || Eisodos::$parameterHandler->neq($debugURLPrefix . "DebugLevel", "")) {
-          $debugLevel = Eisodos::$parameterHandler->getParam($debugURLPrefix . "DebugLevel", Eisodos::$parameterHandler->getParam("SessionDebugLevel"));
-          Eisodos::$parameterHandler->setParam("SessionDebugLevel", $debugLevel, true, false, 'eisodos::render');
-          Eisodos::$logger->setDebugLevels(Eisodos::$parameterHandler->getParam("SessionDebugLevel", Eisodos::$parameterHandler->getParam("DEBUGLEVELS")));
+      if (($debugURLPrefix = Eisodos::$parameterHandler->getParam('DEBUGURLPREFIX', '')) !== '') {
+        if (Eisodos::$parameterHandler->neq('SessionDebugLevel', '') || Eisodos::$parameterHandler->neq($debugURLPrefix . 'DebugLevel', '')) {
+          $debugLevel = Eisodos::$parameterHandler->getParam($debugURLPrefix . 'DebugLevel', Eisodos::$parameterHandler->getParam('SessionDebugLevel'));
+          Eisodos::$parameterHandler->setParam('SessionDebugLevel', $debugLevel, true, false, 'eisodos::render');
+          Eisodos::$logger->setDebugLevels(Eisodos::$parameterHandler->getParam('SessionDebugLevel', Eisodos::$parameterHandler->getParam('DEBUGLEVELS')));
           if ($debugLevel !== '') {
-            Eisodos::$parameterHandler->setParam("DEBUGEXCEPTIONS", "T", false, false, 'eisodos::render');
-            Eisodos::$parameterHandler->setParam("DEBUGMESSAGES", "T", false, false, 'eisodos::render');
-            Eisodos::$parameterHandler->setParam("DEBUGERRORS", "T", false, false, 'eisodos::render');
+            Eisodos::$parameterHandler->setParam('DEBUGEXCEPTIONS', 'T', false, false, 'eisodos::render');
+            Eisodos::$parameterHandler->setParam('DEBUGMESSAGES', 'T', false, false, 'eisodos::render');
+            Eisodos::$parameterHandler->setParam('DEBUGERRORS', 'T', false, false, 'eisodos::render');
           }
         }
         
-        if (Eisodos::$parameterHandler->neq("SessionDebugRequestLog", "") || Eisodos::$parameterHandler->neq($debugURLPrefix . "RequestLog", "")) {
-          $debugLevel = Eisodos::$parameterHandler->getParam($debugURLPrefix . "RequestLog", Eisodos::$parameterHandler->getParam("SessionDebugRequestLog"));
-          Eisodos::$parameterHandler->setParam("SessionDebugRequestLog", $debugLevel, true, false, 'eisodos::render');
-          Eisodos::$parameterHandler->setParam("DEBUGREQUESTLOG", Eisodos::$parameterHandler->getParam("SessionDebugRequestLog"), false, false, 'eisodos::render');
+        if (Eisodos::$parameterHandler->neq('SessionDebugRequestLog', '') || Eisodos::$parameterHandler->neq($debugURLPrefix . "RequestLog", "")) {
+          $debugLevel = Eisodos::$parameterHandler->getParam($debugURLPrefix . 'RequestLog', Eisodos::$parameterHandler->getParam('SessionDebugRequestLog'));
+          Eisodos::$parameterHandler->setParam('SessionDebugRequestLog', $debugLevel, true, false, 'eisodos::render');
+          Eisodos::$parameterHandler->setParam('DEBUGREQUESTLOG', Eisodos::$parameterHandler->getParam('SessionDebugRequestLog'), false, false, 'eisodos::render');
         }
       }
       
-      $debugger = PhpConsole\Helper::register();
+      /* $debugger = PhpConsole\Helper::register();
       $handler = PC::getHandler();
       if (isset($handler, $debugger)) {
         $handler->setHandleErrors(Eisodos::$parameterHandler->isOn('DEBUGERRORS'));
@@ -145,7 +137,7 @@
         }
       }
       
-      Eisodos::$logger->trace('PhpConsole initialized', $this);
+      Eisodos::$logger->trace('PhpConsole initialized', $this); */
       
       if (Eisodos::$utils->safe_array_value($cacheOptions_, 'disableHTMLCache', false)
         || Eisodos::$parameterHandler->isOn('ALWAYSNOCACHE')) {
@@ -219,9 +211,7 @@
       
       session_destroy();
       session_unset();
-      if (Eisodos::$parameterHandler->neq('COOKIE_DOMAIN', '')) {
-        ini_set('session.cookie_domain', Eisodos::$parameterHandler->getParam('COOKIE_DOMAIN'));
-      }
+      session_set_cookie_params(Eisodos::$parameterHandler->getCookieParams());
       session_name(Eisodos::$parameterHandler->getParam('_environment') . (Eisodos::$parameterHandler->getParam('_environment') ? '-' : '') . Eisodos::$applicationName);
       session_start();
       Eisodos::$parameterHandler->setParam('SessionJustStarted', 'T');
@@ -229,6 +219,7 @@
         session_regenerate_id(true);
       }
       $_SESSION = [];
+      Eisodos::$utils->removeDuplicatePHPSessionCookies();
     }
     
     /**

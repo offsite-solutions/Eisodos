@@ -39,9 +39,9 @@
     private string $_environment = '';
     
     /**
-     * @var mixed|string $_configPath Config file's path
+     * @var string $_configPath Config file's path
      */
-    private $_configPath = '';
+    private string $_configPath = '';
     
     /**
      * @var int $_configType Format of configurations file
@@ -145,7 +145,7 @@
       $this->_readSection('Env', $L);
       foreach ($L as $key => $val) {
         if (!putenv($key . '=' . $val)) {
-          PC::debug('PutEnv failed (' . $key . '=' . $val . ')');
+          Eisodos::$logger->debug('PutEnv failed (' . $key . '=' . $val . ')');
         }
       }
     }
@@ -157,7 +157,7 @@
      * @param string $configFile_ Configuration file's name
      * @return string|bool
      */
-    private function _readSection(string $section_, array &$array_ = array(), string $configFile_ = ''): string {
+    private function _readSection(string $section_, array &$array_ = array(), string $configFile_ = ''): string|bool {
       if ($section_ === '') {
         return false;
       }
@@ -233,7 +233,7 @@
           if (array_key_exists($section_, $this->_configCache[$configFile])) {
             $array_ = $array_ = $this->_configCache[$configFile][$section_];
           }
-        } catch (Exception $e) {
+        } catch (Exception) {
         }
       }
       
@@ -318,7 +318,7 @@
       $source = $this->_readSection($section_, $L, $configFile_);
       foreach ($L as $key => $val) {
         // add imported key values to the parameterHandler by replacing variables in the values
-        $val = (strpos($val, '$') !== false ? Eisodos::$templateEngine->replaceParamInString($val) : $val);
+        $val = (str_contains($val, '$') ? Eisodos::$templateEngine->replaceParamInString($val) : $val);
         // if key starts with a minus, then make it readonly
         if ($addToParameters_) {
           Eisodos::$parameterHandler->setParam(

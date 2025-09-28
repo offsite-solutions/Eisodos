@@ -62,10 +62,10 @@
     
     /**
      * Start transaction
-     * @param mixed $savePoint_ Transaction savepoint
+     * @param string|null $savePoint_ Transaction savepoint
      * @throws Exception
      */
-    public function startTransaction($savePoint_ = NULL);
+    public function startTransaction(string $savePoint_ = NULL);
     
     /**
      * Commit transaction
@@ -74,9 +74,9 @@
     
     /**
      * Rollback transaction
-     * @param mixed $savePoint_ Transaction savepoint
+     * @param string|null $savePoint_ Transaction savepoint
      */
-    public function rollback($savePoint_ = NULL): void;
+    public function rollback(string $savePoint_ = NULL): void;
     
     /**
      * Is session in transaction mode?
@@ -90,7 +90,7 @@
      * @param bool $throwException_
      * @return int|bool Affected rows - false on error in case of exception didn't throw
      */
-    public function executeDML(string $SQL_, bool $throwException_ = true);
+    public function executeDML(string $SQL_, bool $throwException_ = true):int|bool;
     
     /**
      * Execute prepared DML
@@ -100,7 +100,7 @@
      * @param bool $throwException_
      * @return int|bool Affected rows - false on error in case of exception didn't throw
      */
-    public function executePreparedDML(string $SQL_, array $dataTypes_ = [], array &$data_ = [], bool $throwException_ = true);
+    public function executePreparedDML(string $SQL_, array $dataTypes_ = [], array &$data_ = [], bool $throwException_ = true):int|bool;
     
     /**
      * Execute prepared DML
@@ -110,7 +110,7 @@
      * @return int|bool Affected rows - false on error in case of exception didn't throw
      * @throws RuntimeException
      */
-    public function executePreparedDML2(string $SQL_, array $boundVariables_, bool $throwException_ = true);
+    public function executePreparedDML2(string $SQL_, array $boundVariables_, bool $throwException_ = true):int|bool;
     
     /**
      * Preparing stored procedure parameter for binding
@@ -159,7 +159,7 @@
       array  &$queryResult_ = NULL,
       array  $getOptions_ = [],
       string $exceptionMessage_ = ''
-    );
+    ):mixed;
     
     /**
      * Gives back the last query's column names
@@ -177,7 +177,7 @@
      * Get native connection object
      * @return mixed
      */
-    public function getConnection();
+    public function getConnection():mixed;
     
     /**
      * Converts value to SQL keyword if empty
@@ -190,7 +190,7 @@
      * @return string
      * @throws RuntimeException
      */
-    public function emptySQLField($value_, bool $isString_ = true, int $maxLength_ = 0, string $exception_ = '', bool $withComma_ = false, string $keyword_ = 'NULL'): string;
+    public function emptySQLField(mixed $value_, bool $isString_ = true, int $maxLength_ = 0, string $exception_ = '', bool $withComma_ = false, string $keyword_ = 'NULL'): string;
     
     /**
      * Converts value to NULL if empty
@@ -202,7 +202,7 @@
      * @return string
      * @throws RuntimeException
      */
-    public function nullStr($value_, bool $isString_ = true, int $maxLength_ = 0, string $exception_ = "", bool $withComma_ = false): string;
+    public function nullStr(mixed $value_, bool $isString_ = true, int $maxLength_ = 0, string $exception_ = '', bool $withComma_ = false): string;
     
     /**
      * Converts value to DEFAULT if empty
@@ -214,7 +214,7 @@
      * @return string
      * @throws RuntimeException
      */
-    public function defaultStr($value_, bool $isString_ = true, int $maxLength_ = 0, string $exception_ = "", bool $withComma_ = false): string;
+    public function defaultStr(mixed $value_, bool $isString_ = true, int $maxLength_ = 0, string $exception_ = '', bool $withComma_ = false): string;
     
     /**
      * Converts parameter value to NULL if empty
@@ -226,7 +226,7 @@
      * @return string
      * @throws RuntimeException
      */
-    public function nullStrParam(string $parameterName_, bool $isString_ = true, int $maxLength_ = 0, string $exception_ = "", bool $withComma_ = false): string;
+    public function nullStrParam(string $parameterName_, bool $isString_ = true, int $maxLength_ = 0, string $exception_ = '', bool $withComma_ = false): string;
     
     /**
      * Converts parameter value to DEFAULT if empty
@@ -238,7 +238,7 @@
      * @return string
      * @throws RuntimeException
      */
-    public function defaultStrParam(string $parameterName_, bool $isString_ = true, int $maxLength_ = 0, string $exception_ = "", bool $withComma_ = false): string;
+    public function defaultStrParam(string $parameterName_, bool $isString_ = true, int $maxLength_ = 0, string $exception_ = '', bool $withComma_ = false): string;
     
   }
 

@@ -4,10 +4,9 @@
   
   use Eisodos\Abstracts\Singleton;
   use Exception;
-  use Mail;
-  use Mail_mime;
-  use PC;
-  use PEAR;
+  use PHPMailer\PHPMailer\PHPMailer;
+  use PHPMailer\PHPMailer\Exception as PHPMailerException;
+  use RuntimeException;
   
   final class Mailer extends Singleton {
     
@@ -16,6 +15,27 @@
     // Public variables
     
     // Private functions
+    
+    /** Writes mail log
+     * @param PHPMailerException $e
+     * @return void
+     */
+    private function writeMailLog(PHPMailerException $e): void {
+      try {
+        if (Eisodos::$parameterHandler->neq('MAILLOG', '')) {
+          $file = fopen(Eisodos::$templateEngine->replaceParamInString(Eisodos::$parameterHandler->getParam('MAILLOG')), 'ab+');
+          if ($file) {
+            fwrite($file, '---- ' . date('Y-m-d H:i:s') . " ----\n");
+            fwrite($file, $e->getMessage() . "\n");
+            fclose($file);
+          }
+        } else if (Eisodos::$logger->cliMode) {
+          print($e->getMessage()."\n");
+        }
+      } catch (Exception) {
+      
+      }
+    }
     
     // Public functions
     
@@ -27,69 +47,90 @@
     ): void {
     }
     
-    /**
-     * Send a simple UTF-8 encoded mail
-     * @param string $to_
-     * @param string $subject_
-     * @param string $body_
-     * @param string $from_
-     * @return bool|string
+    /** Simple "name <email@domain>" to [email, name] parser
+     * @param string $address_
+     * @return array
      */
-    public function utf8_html_mail(string $to_, string $subject_, string $body_, string $from_) {
-      try {
-        $message = new Mail_mime(
-          array(
-            'text_charset' => 'utf-8',
-            'html_charset' => 'utf-8',
-            'eol' => "\n"
-          )
-        );
-        
-        $message->setHTMLBody($body_);
-        $extraHeaders = array(
-          'From' => $from_,
-          'Subject' => $subject_
-        );
-        foreach ($extraHeaders as $name => $value) {
-          $extraHeaders[$name] = $message->encodeHeader($name, $value, 'utf-8', 'quoted-printable');
-        }
-        $headers = $message->headers($extraHeaders);
-        
-        if (Eisodos::$parameterHandler->neq("SMTP.Host", "")) {
-          $SMTPOptions = array('host' => Eisodos::$parameterHandler->getParam("SMTP.Host"),
-            'auth' => Eisodos::$parameterHandler->neq("SMTP.Username", ""),
-            'port' => Eisodos::$parameterHandler->getParam("SMTP.Port"),
-            'username' => Eisodos::$parameterHandler->getParam("SMTP.Username"),
-            'password' => Eisodos::$parameterHandler->getParam("SMTP.Password"));
-          $mail = Mail::factory("smtp", $SMTPOptions);
-        } else {
-          $mail = Mail::factory("mail");
-        }
-        
-        $mail->send($to_, $headers, $message->get());
-        
-        if (PEAR::isError($mail)) {
-          return $mail->getMessage();
-        }
-        
-      } catch (Exception $e) {
-        PC::debug($e->getMessage());
-        try {
-          if (Eisodos::$parameterHandler->neq('MAILLOG', '')) {
-            $file = fopen(Eisodos::$parameterHandler->getParam('MAILLOG'), 'ab+');
-            fwrite($file, "---- " . date('Y-m-d H:i:s') . " ----\n");
-            fwrite($file, $e->getMessage() . "\n");
-            fclose($file);
-          }
-        } catch (Exception $e) {
-        
-        }
-      } finally {
-        unset($mail);
-        unset($message);
+    public function parseEmailAddress(string $address_): array {
+      $address_ = trim($address_);
+      if (preg_match('/^\s*("?)([^"<]+)\1\s*<\s*([^>]+)\s*>$/u', $address_, $m)) {
+        return [trim($m[3]), trim($m[2])];
       }
       
-      return true;
+      // ha nincs név, csak email
+      return [$address_, ''];
+    }
+    
+    /**
+     * Send a simple UTF-8 encoded mail, addresses can be in name <email@domain> format
+     * @param string $to_ To, can be multiple address separated by , or ;,
+     * @param string $subject_ Subject of the mail
+     * @param string $body_ HTML body
+     * @param string $from_ From address
+     * @param array $filesToAttach_ Attachments
+     * @return bool
+     */
+    public function sendMail(string $to_,
+                             string $subject_,
+                             string $body_,
+                             string $from_,
+                             array  $filesToAttach_ = []): bool {
+      
+      try {
+        $mail = new PHPMailer(true);
+        $mail->CharSet = 'UTF-8';
+        
+        if (Eisodos::$parameterHandler->neq('SMTP.Host', '')) {
+          $mail->isSMTP();
+          $mail->Host = Eisodos::$parameterHandler->getParam('SMTP.Host');
+          $mail->Port = (int)(Eisodos::$parameterHandler->getParam('SMTP.Port') ?: 587);
+          $mail->SMTPAuth = Eisodos::$parameterHandler->neq('SMTP.Username', '');
+          if ($mail->SMTPAuth) {
+            $mail->Username = Eisodos::$parameterHandler->getParam('SMTP.Username');
+            $mail->Password = Eisodos::$parameterHandler->getParam('SMTP.Password');
+          }
+          // opcionális: SMTPSecure (tls/ssl) paraméterből
+          $secure = Eisodos::$parameterHandler->getParam('SMTP.Secure');
+          if ($secure !== '') {
+            $mail->SMTPSecure = $secure; // 'tls' vagy 'ssl'
+          }
+          $mail->SMTPAutoTLS = true; // STARTTLS ha elérhető
+        } else {
+          $mail->isMail(); // /usr/sbin/sendmail helyett sima mail() wrapper
+        }
+        
+        // Feladó beállítása
+        [$fromEmail, $fromName] = $this->parseEmailAddress($from_);
+        $mail->setFrom($fromEmail, $fromName ?: '');
+        
+        // Címzettek – több cím is jöhet vesszővel vagy pontosvesszővel elválasztva
+        foreach (preg_split('/[;,]+/', $to_) as $addr) {
+          $addr = trim($addr);
+          if ($addr === '') {
+            continue;
+          }
+          [$toEmail, $toName] = $this->parseEmailAddress($addr);
+          $mail->addAddress($toEmail, $toName ?: '');
+        }
+        
+        // Tárgy + törzs
+        $mail->Subject = $subject_;
+        $mail->isHTML();
+        $mail->Body = $body_;
+        
+        foreach ($filesToAttach_ as $f) {
+          $mail->addAttachment($f);
+        }
+        
+        $mail->send();
+        
+        return true;
+        
+      } catch (PHPMailerException $e) {
+        $this->writeMailLog($e);
+        
+        return false;
+      }
     }
     
     /**
@@ -99,53 +140,14 @@
      * @param string $body_
      * @param string $from_
      * @param array $filesToAttach_
+     * @return bool
      */
-    public function utf8_html_mail_attachment(string $to_, string $subject_, string $body_, string $from_, $filesToAttach_ = array()): void {
-      try {
-        $message = new Mail_mime(
-          array(
-            'text_charset' => 'utf-8',
-            'html_charset' => 'utf-8',
-            'eol' => "\n"
-          )
-        );
-        
-        $message->setHTMLBody($body_);
-        foreach ($filesToAttach_ as $f) {
-          $message->addAttachment($f);
-        }
-        $extraHeaders = array(
-          'From' => $from_,
-          'Subject' => $subject_
-        );
-        foreach ($extraHeaders as $name => $value) {
-          $extraHeaders[$name] = $message->encodeHeader($name, $value, 'utf-8', 'quoted-printable');
-        }
-        $headers = $message->headers($extraHeaders);
-        
-        if (Eisodos::$parameterHandler->neq("SMTP.Host", "")) {
-          $SMTPOptions = array('host' => Eisodos::$parameterHandler->getParam("SMTP.Host"),
-            'auth' => Eisodos::$parameterHandler->neq("SMTP.Username", ""),
-            'port' => Eisodos::$parameterHandler->getParam("SMTP.Port"),
-            'username' => Eisodos::$parameterHandler->getParam("SMTP.Username"),
-            'password' => Eisodos::$parameterHandler->getParam("SMTP.Password"));
-          $mail = Mail::factory("smtp", $SMTPOptions);
-        } else {
-          $mail = Mail::factory("mail");
-        }
-        
-        $mail->send($to_, $headers, $message->get());
-        
-      } catch (Exception $e) {
-        PC::debug($e->getMessage());
-      }
-      
-      if (isset($mail)) {
-        unset($mail);
-      }
-      if (isset($message)) {
-        unset($message);
-      }
+    public function utf8_html_mail_attachment(string $to_,
+                                              string $subject_,
+                                              string $body_,
+                                              string $from_,
+                                              array  $filesToAttach_ = []): bool {
+      return $this->sendMail($to_, $subject_, $body_, $from_, $filesToAttach_);
     }
     
     /**
@@ -163,18 +165,17 @@
      * @param bool $testOnly_ Dont sends the mails just prepare them
      * @return string Log
      */
-    public function utf8_html_mail_params_attachment_batch(
-      TemplateEngine $templateEngine_,
-      array          $to_,
-      string         $subject_,
-      string         $bodyTemplate_,
-      string         $from_,
-      array          $filesToAttach_ = array(),
-      int            $batch_loopCount_ = 50,
-      int            $batch_waitBetweenLoops_ = 60,
-      bool           $batch_echo_ = false,
-      int            $batch_skip_ = 0,
-      bool           $testOnly_ = false
+    public function sendBatchMail(
+      array  $to_,
+      string $subject_,
+      string $bodyTemplate_,
+      string $from_,
+      array  $filesToAttach_ = array(),
+      int    $batch_loopCount_ = 50,
+      int    $batch_waitBetweenLoops_ = 60,
+      bool   $batch_echo_ = false,
+      int    $batch_skip_ = 0,
+      bool   $testOnly_ = false
     ): string {
       $log = '';
       $num = 0;
@@ -199,50 +200,18 @@
           }
           $toSend = trim($toSend);
           
-          // creating mail
-          $message = new Mail_mime(
-            array(
-              'text_charset' => 'utf-8',
-              'html_charset' => 'utf-8',
-              'eol' => "\n"
-            )
-          );
-          
           // adding params
           $params = explode("\n", $paramstext);
           foreach ($params as $line) {
             $pieces = explode('=', $line, 2);
             Eisodos::$parameterHandler->setParam($pieces[0], $pieces[1], false, false, 'eisodos::mailer');
           }
-          
-          $message->setHTMLBody($templateEngine_->getTemplate($bodyTemplate_, array(), false));
-          foreach ($filesToAttach_ as $f) {
-            $message->addAttachment($f);
-          }
-          $body = $message->get();
-          $extraHeaders = array(
-            'From' => $from_,
-            'Subject' => $subject_
-          );
-          foreach ($extraHeaders as $name => $value) {
-            $extraHeaders[$name] = $message->encodeHeader($name, $value, 'utf-8', 'quoted-printable');
-          }
-          $headers = $message->headers($extraHeaders);
-          
-          if (Eisodos::$parameterHandler->neq("SMTP.Host", "")) {
-            $SMTPOptions = array('host' => Eisodos::$parameterHandler->getParam("SMTP.Host"),
-              'auth' => Eisodos::$parameterHandler->neq("SMTP.Username", ""),
-              'port' => Eisodos::$parameterHandler->getParam("SMTP.Port"),
-              'username' => Eisodos::$parameterHandler->getParam("SMTP.Username"),
-              'password' => Eisodos::$parameterHandler->getParam("SMTP.Password"));
-            $mail = Mail::factory("smtp", $SMTPOptions);
-          } else {
-            $mail = Mail::factory("mail");
-          }
+          // generate html body
+          $body = Eisodos::$templateEngine->getTemplate($bodyTemplate_, array(), false);
           
           try {
-            if (!$testOnly_) {
-              $mail->send($toSend, $headers, $body);
+            if (!$testOnly_ && !$this->sendMail($toSend, $subject_, $body, $from_, $filesToAttach_)) {
+              throw new RuntimeException('error sending mail');
             }
             $logTXT = "OK\t$num\t" . $toSend . "\t\t" . date('H:i:s') . "\n";
             $log .= $logTXT;
@@ -257,13 +226,6 @@
               print($logTXT);
               @ob_flush();
             }
-          }
-          
-          if (isset($mail)) {
-            unset($mail);
-          }
-          if (isset($message)) {
-            unset($message);
           }
         }
       }

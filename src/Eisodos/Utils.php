@@ -251,4 +251,26 @@
       
       return apache_request_headers();
     }
+    
+    /** Remove duplicate session cookies from header */
+    public function removeDuplicatePHPSessionCookies(): void {
+      $setCookiesBack = [];
+      foreach (headers_list() as $h) {
+        if (false !== stripos($h, 'Set-Cookie:')) {
+          if (false !== stripos($h, session_name() . '=') &&
+            false === stripos($h, session_id())) {
+            continue;
+          }
+          $setCookiesBack[] = $h;
+        }
+      }
+      header_remove('Set-Cookie');
+      foreach ($setCookiesBack as $h) {
+        header($h, false);
+      }
+      /* $f=fopen('/var/log/greengo/cookies.txt','ab');
+      fwrite($f,print_r(headers_list(),true)."\n\n");
+      fclose($f); */
+    }
+    
   }

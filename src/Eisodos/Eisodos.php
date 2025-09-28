@@ -87,7 +87,7 @@
         self::$translator = Translator::getInstance();
         self::$mailer = Mailer::getInstance();
         self::$dbConnectors = DBConnectors::getInstance();
-      } catch (Exception $e) {
+      } catch (Exception) {
         die('Initialization failure');
       }
   

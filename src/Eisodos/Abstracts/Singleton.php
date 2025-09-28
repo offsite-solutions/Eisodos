@@ -13,7 +13,7 @@
      *
      * @var static $instances instances
      */
-    protected static Singleton $instances;
+    protected static array $instances = [];
     
     /**
      * is not allowed to call from outside to prevent from creating multiple instances,
@@ -26,12 +26,11 @@
      * Returns the *Singleton* instance of this class
      */
     public static function getInstance() {
-      $cls = static::class;
-      if (!isset(static::$instances[$cls])) {
-        static::$instances[$cls] = new static();
-      }
-      
-      return static::$instances[$cls];
+      $class = static::class;
+        if (!isset(self::$instances[$class])) {
+            self::$instances[$class] = new $class();
+        }
+        return self::$instances[$class];
     }
     
     /**

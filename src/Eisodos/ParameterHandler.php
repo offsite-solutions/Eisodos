@@ -128,7 +128,7 @@
      */
     public function neq(
       string $parameterName_,
-             $value_,
+      mixed  $value_,
       string $defaultValue_ = '',
       bool   $caseInsensitive_ = true,
       bool   $trimValue_ = true
@@ -147,7 +147,7 @@
       string $defaultValue_ = 'F'
     ): bool {
       
-      if (strpos($parameterName_, '^') === 0) {
+      if (str_starts_with($parameterName_, '^')) {
         $parameterName_ = (string)$this->getParam(substr($parameterName_, 1));
       }
       
@@ -166,7 +166,7 @@
       string $parameterName_,
       string $defaultValue_ = 'T'
     ): bool {
-      if (strpos($parameterName_, '^') === 0) {
+      if (str_starts_with($parameterName_, '^')) {
         $parameterName_ = (string)$this->getParam(substr($parameterName_, 1));
       }
       
@@ -191,11 +191,11 @@
       bool   $caseInsensitive_ = true,
       bool   $trimValue_ = true
     ): bool {
-      if (strpos($value_, '^') === 0) {
+      if (str_starts_with($value_, '^')) {
         $value_ = (string)$this->getParam(substr($value_, 1));
       }
       
-      if (strpos($parameterName_, '^') === 0) {
+      if (str_starts_with($parameterName_, '^')) {
         $parameterName_ = (string)$this->getParam(substr($parameterName_, 1));
       }
       
@@ -223,9 +223,9 @@
      * @return string|array
      * @noinspection TypeUnsafeComparisonInspection
      */
-    public function getParam(string $parameterName_, string $defaultValue_ = '') {
+    public function getParam(string $parameterName_, string $defaultValue_ = ''): mixed {
       try {
-        $parameterName_ = strtolower($parameterName_);
+        $parameterName_ = str_replace('___', '-', strtolower($parameterName_));
         switch ($parameterName_) {
           case 'seq':
             $this->_param_SEQ++;
@@ -278,7 +278,7 @@
             
             return $lastrandom;
         }
-        if (strpos($parameterName_, 'env_') === 0) {
+        if (str_starts_with($parameterName_, 'env_')) {
           $v = getenv(substr($parameterName_, 4));
           if ($v === false || $v === '') {
             $v = getenv(strtoupper(substr($parameterName_, 4)));
@@ -293,7 +293,7 @@
         }
         
         return ($v === '' ? $defaultValue_ : $v);
-      } catch (Exception $e) {
+      } catch (Exception) {
         return '';
       }
     }
@@ -309,7 +309,7 @@
      */
     public function setParam(
       string $parameterName_,
-             $value_ = '',
+      mixed  $value_ = '',
       bool   $sessionStored_ = false,
       bool   $cookieStored_ = false,
       string $source_ = ''): void {
@@ -368,9 +368,7 @@
     private function _loadSessionVariables(): void {
       mt_srand((double)microtime() * 1000000);
       if (!session_id()) {
-        if ($this->neq('COOKIE_DOMAIN', '')) {
-          ini_set('session.cookie_domain', $this->getParam('COOKIE_DOMAIN'));
-        }
+        session_set_cookie_params($this->getCookieParams());
         session_name($this->getParam('_environment') . ($this->getParam('_environment') ? '-' : '') . Eisodos::$applicationName);
         session_start();
         $this->setParam('SessionJustStarted', 'T');
@@ -400,8 +398,7 @@
      * @return float|int
      */
     private function _loadInputParams(
-      array $parameters_ = array(),
-      bool  $base64Decode_ = false
+      array $parameters_ = array()
     ) {
       $result = 0;
       
@@ -412,7 +409,7 @@
       
       foreach ($parameterFilterLines as $line) {
         $line = trim($line);
-        if ($line && !preg_match('/^#/', $line)) {
+        if ($line && !str_starts_with($line, '#')) {
           $line .= ';;;;;';
           $items = explode(';', $line);
           if ($items[0] === 'permanent') {
@@ -443,16 +440,13 @@
           foreach ($LParamFilters2 as $fn => $fv) // filterparam is a substring of inputparams and its marked with *
           {
             if (($fn === $n) ||
-              ((strpos($fn, '*') !== false) && (strpos(
-                    $n,
-                    Eisodos::$utils->replace_all(
-                      $fn,
-                      '*',
-                      '',
-                      false,
-                      false
-                    )
-                  ) === 0))) {
+              ((str_contains($fn, '*')) && (str_starts_with($n,
+                  Eisodos::$utils->replace_all($fn,
+                    '*',
+                    '',
+                    false,
+                    false
+                  ))))) {
               unset($this->_collectedParams[$n]);
               break;
             }
@@ -485,14 +479,10 @@
           }
         }
         
-        if ($base64Decode_) {
-          $v = base64_decode($v);
-        }
-        
         foreach ($LParamFilters2 as $fn => $fv) {
           if (($fn === $n) ||
-            ((strpos($fn, '*') !== false)
-              && (strpos($n, Eisodos::$utils->replace_all($fn, '*', '', false, false)) === 0))) {
+            ((str_contains($fn, '*'))
+              && (str_starts_with($n, Eisodos::$utils->replace_all($fn, '*', '', false, false))))) {
             switch ($fv[0]) {
               case 'exclude':
                 $doNotAddIt = true;
@@ -527,10 +517,7 @@
               case 'input':
                 break; // nothing to do, just type check
               case 'skip':
-                $this->_skippedParams[Eisodos::$utils->replace_all($fn, '*', '', false, false)] = (strpos(
-                    $fn,
-                    '*'
-                  ) !== false);
+                $this->_skippedParams[Eisodos::$utils->replace_all($fn, '*', '', false, false)] = (str_contains($fn, '*'));
                 break;
             }
             $parameterType = $fv[2];
@@ -550,7 +537,7 @@
             $v = $this->udSDecode($v);
           }
         } catch (Exception $e) {
-          Eisodos::$render->pageDebugInfo('Invalid input param (decode) '.$n);
+          Eisodos::$render->pageDebugInfo('Invalid input param (decode) ' . $n);
           continue;
         }
         
@@ -559,11 +546,11 @@
             && ($this->getParam($n) !== $v)
             && !(($this->udSDecode($parameters_['csid']) === $this->getParam('SESSIONID'))
               || (($this->neq('ALLOWADMIN', ''))
-                && (strpos($this->getParam('ALLOWADMIN', '127.0.0.1'), $_SERVER['REMOTE_ADDR']) !== false))
+                && (str_contains($this->getParam('ALLOWADMIN', '127.0.0.1'), $_SERVER['REMOTE_ADDR'])))
             )) {
             throw new RuntimeException('Error SID Decoding parameter');
           }
-        } catch (Exception $e) {
+        } catch (Exception) {
           Eisodos::$render->pageDebugInfo("Invalid input param (siddecode) $n");
           continue;
         }
@@ -584,9 +571,9 @@
                 new Exception('Invalid parameter value [' . $n . ']=[' . $v . ']')
               );
             } else {
-              PC::debug('Invalid parameter value [' . $n . ']=[' . $v . ']');
+              Eisodos::$logger->debug('Invalid parameter value [' . $n . ']=[' . $v . ']');
             }
-            if (strpos($parameterTypeError, '/') === 0 || strpos($parameterTypeError, 'http') === 0) {
+            if (str_starts_with($parameterTypeError, '/') || str_starts_with($parameterTypeError, 'http')) {
               $this->setParam('Redirect', $parameterTypeError, false, false, 'eisodos::parameterHandler');
             } else {
               $v = $parameterTypeError;
@@ -597,11 +584,10 @@
         $this->setParam($n, $v, $storeIt, $cookieIt, 'request');
         
         if (!is_array($v)) {
-          if ($this->isOn('DEBUGMISSINGPARAMS') && ($v !== '') && !array_key_exists(
-              $n,
-              $LParamFilters2
-            )) {
-            PC::debug('Missing parameter: [' . strtoupper($n) . '] ');
+          if (($v !== '')
+            && !array_key_exists($n, $LParamFilters2)
+            && $this->isOn('DEBUGMISSINGPARAMS')) {
+            Eisodos::$logger->debug('Missing parameter: [' . strtoupper($n) . '] ');
           }
           
           if (($v !== '') && !array_key_exists($n, $LParamFilters2)) {
@@ -639,6 +625,7 @@
         foreach ($browserLanguages as $browserLanguage) {
           if (in_array($browserLanguage, $acceptedLanguages, true)) {
             $this->setParam('Lang', $browserLanguage, true, false, 'eisodos::parameterHandler');
+            break;
           }
         }
       }
@@ -720,11 +707,49 @@
           }
           flock($file, LOCK_UN);
         } else {
-          PC::debug('Parameter file was blocked for writing!');
+          Eisodos::debug('Parameter file was blocked for writing!');
         }
         fclose($file);
       }
+      
+      Eisodos::$utils->removeDuplicatePHPSessionCookies();
     }
+    
+    /** Gives back cookie domain if set */
+    private function getCookieDomain(): string {
+      if ($this->neq('COOKIE_DOMAIN', '')) {
+        $domain = $this->getParam('COOKIE_DOMAIN');
+        if (str_contains($domain, ',')) {
+          $domains = explode(',', $domain);
+          $host = $_SERVER['HTTP_HOST'] ?? $_SERVER['SERVER_NAME'] ?? 'localhost';
+          $domainClear = preg_replace('/:\d+$/', '', $host);
+          if (in_array($domainClear, $domains, true)) {
+            return $domainClear;
+          }
+          
+          return $domains[0];
+        }
+        
+        return $domain;
+        
+      }
+      
+      return '';
+    }
+    
+    public function getCookieParams(): array {
+      $domain = $this->getCookieDomain();
+      
+      return
+        [
+          'path' => $this->getParam('COOKIE_PATH.' . $domain, $this->getParam('COOKIE_PATH')),
+          'domain' => $domain, // leading dot for compatibility or use subdomain
+          'secure' => ($this->getParam('COOKIE_SECURE.' . $domain, $this->getParam('COOKIE_SECURE', 'F')) === 'T'),
+          'httponly' => ($this->getParam('COOKIE_HTTPONLY.' . $domain, $this->getParam('COOKIE_HTTPONLY', 'F')) === 'T'),    // or false
+          'samesite' => $this->getParam('COOKIE_SAMESITE.' . $domain, $this->getParam('COOKIE_SAMESITE', 'None')) // None || Lax  || Strict
+        ];
+    }
+    
     
     /**
      *
@@ -741,12 +766,7 @@
       }
       $_SESSION = array();
       // default cookie options
-      $_cookie_options = array(
-        'domain' => Eisodos::$parameterHandler->getParam('COOKIE_DOMAIN'),
-        'secure' => Eisodos::$parameterHandler->isOn('COOKIE_SECURE', Eisodos::$parameterHandler->eq('https', 'https') ? 'T' : 'F'),
-        'httponly' => Eisodos::$parameterHandler->isOn('COOKIE_HTTPONLY'),
-        'samesite' => Eisodos::$parameterHandler->getParam('COOKIE_SAMESITE', 'None')
-      );
+      $_cookie_options = $this->getCookieParams();
       foreach ($this->_params as $key => $v) {
         if ($v['flag'] === 's') {
           $_SESSION[$key] = $v['value'];
@@ -772,6 +792,7 @@
           }
         }
       }
+      Eisodos::$utils->removeDuplicatePHPSessionCookies();
     }
     
     /**
@@ -793,13 +814,13 @@
       for ($a = 1, $aMax = floor(strlen($d) / 2); $a <= $aMax; $a++) {
         try {
           if ((preg_match('/[G-Zg-z]/', chr(hexdec($d[$a * 2 - 2] . $d[$a * 2 - 1]))))
-            or ($useMarks_ and (preg_match("/[!-\/]/", chr(hexdec($d[$a * 2 - 2] . $d[$a * 2 - 1])))))
+            || ($useMarks_ && (preg_match("/[!-\/]/", chr(hexdec($d[$a * 2 - 2] . $d[$a * 2 - 1])))))
           ) {
             $c .= chr(hexdec($d[$a * 2 - 2] . $d[$a * 2 - 1]));
           } else {
             $c .= $d[$a * 2 - 2] . $d[$a * 2 - 1];
           }
-        } catch (Exception $e) {
+        } catch (Exception) {
           $c .= $d[$a * 2 - 2] . $d[$a * 2 - 1];
         }
       }
@@ -843,8 +864,8 @@
           $this->_params[$key]['flag'] = '';
         } // cleanup cookies except permanent and raw cookies
         elseif ($v['flag'] === 'c'
-          and Eisodos::$utils->safe_array_value($this->_cookies, $key) === ''
-          and !in_array(strtolower($key), explode(',', strtolower($this->getParam('RAWCOOKIES', ''))), true)) {
+          && Eisodos::$utils->safe_array_value($this->_cookies, $key) === ''
+          && !in_array(strtolower($key), explode(',', strtolower($this->getParam('RAWCOOKIES', ''))), true)) {
           $this->_params[$key]['value'] = '';
         }
       }

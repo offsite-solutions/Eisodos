@@ -90,7 +90,7 @@
       $editorMode = Eisodos::$parameterHandler->isOn('EditorMode');
       foreach (explode("\n", $templateText_) as $line) {
         if ($editorMode // remove line ends starting with comment mark (##)
-          && strpos($line, $commentMark) !== false) {
+          && str_contains($line, $commentMark)) {
           $line = substr($line, 0, strpos($line, $commentMark));
           if ($line === '') {
             continue;
@@ -140,12 +140,12 @@
         throw new RuntimeException('Open and close tags are mandatory');
       }
       foreach ($this->_registeredParsers as $parser) {
-        if (strpos($parser->openTag(), $parser_->openTag()) !== false
-          || strpos($parser_->openTag(), $parser->openTag()) !== false) {
+        if (str_contains($parser->openTag(), $parser_->openTag())
+          || str_contains($parser_->openTag(), $parser->openTag())) {
           throw new RuntimeException('Open tag already registered!');
         }
-        if (strpos($parser->closeTag(), $parser_->closeTag()) !== false
-          || strpos($parser_->closeTag(), $parser->closeTag()) !== false) {
+        if (str_contains($parser->closeTag(), $parser_->closeTag())
+          || str_contains($parser_->closeTag(), $parser->closeTag())) {
           throw new RuntimeException('Close tag already registered!');
         }
       }
@@ -162,7 +162,7 @@
      * @param bool $disableLanguageTagParsing_
      * @param int $templateRow_
      * @param bool $raiseOnMissingTemplate_
-     * @return bool|mixed|string
+     * @return string
      */
     private function _getTemplate(
       string $templateID_,
@@ -172,7 +172,7 @@
       bool   $disableLanguageTagParsing_ = false,
       int    $templateRow_ = -1,
       bool   $raiseOnMissingTemplate_ = false
-    ) {
+    ): string {
       $Page = '';
       if ($templateID_ === '') {
         return '';
@@ -195,7 +195,7 @@
       
       $TemplateFile = '';
       // ha a templateId tartalmaz / jelet, akkor megnezni, hogy ehhez tartozik-e kulon config konyvtar
-      if (strpos($templateID_, '/') !== false) {
+      if (str_contains($templateID_, '/')) {
         $templateDir = Eisodos::$parameterHandler->getParam(explode('/', $templateID_, 2)[0] . '.TEMPLATEDIR');
       } else {
         $templateDir = '';
@@ -207,8 +207,8 @@
       // TODO EditorMode-ban engedelyezni a template-ek betolteset abszolut path-rol (vendor/EisodosEditor/templates/) hogy ne kelljen linkelni
       
       if ($Page === '') {
-        if (strpos($templateDir, 'http://') === false
-          && strpos($templateDir, 'https://') === false) {
+        if (!str_contains($templateDir, 'http://')
+          && !str_contains($templateDir, 'https://')) {
           if (file_exists($templateDir . $LangSpec . $templateID_ . '.template')) {
             $TemplateFile = $templateDir . $LangSpec . $templateID_ . '.template';
           } elseif (Eisodos::$parameterHandler->neq('DEFTEMPLATELANG', '')) {
@@ -233,7 +233,7 @@
           while (!feof($file)) {
             $line = rtrim(fgets($file));
             if (!Eisodos::$parameterHandler->isOn('EditorMode')
-              && strpos($line, Eisodos::$parameterHandler->getParam('COMMENTMARK', '##')) !== false) {
+              && str_contains($line, Eisodos::$parameterHandler->getParam('COMMENTMARK', '##'))) {
               $line = substr(
                 $line,
                 0,
@@ -286,8 +286,6 @@
       
       $Page = $this->parse($Page, $listOfValuePairs_, $disableParsing_);
       
-      //Eisodos::$logger->trace('END', $this);
-      
       if ($addResultToResponse_ === true) {
         Eisodos::$render->Response .= $Page;
         
@@ -301,7 +299,7 @@
      * @param string $text_ Part of page
      * @param array $listOfValuePairs_
      * @param bool $disableParsing_
-     * @return mixed|string
+     * @return string
      */
     public function parse(string $text_, array $listOfValuePairs_ = array(), bool $disableParsing_ = false): string {
       $loopCountLimit = (integer)Eisodos::$parameterHandler->getParam('LOOPCOUNT', '1000');
@@ -321,7 +319,7 @@
         $parameterExists = $this->_getParameterExists($text_);
         $parser = $this->_findUnparsedBlock($text_, $blockPosition);
         
-        while (($parameterExists or $parser) and $LoopCount <= $loopCountLimit
+        while (($parameterExists || $parser) && $LoopCount <= $loopCountLimit
         ) {
           $foundParameter = '';
           $parameterPosition = $this->_getParameterPos($text_, $foundParameter);
@@ -350,7 +348,7 @@
      * @param $text_
      * @return false|int
      */
-    private function _getParameterExists($text_) {
+    private function _getParameterExists($text_): false|int {
       return preg_match('/\$[\w]+/', $text_);
     }
     
@@ -373,15 +371,12 @@
      * Gives back the position of the first valuable character
      * @param string $text_ Search subject
      * @param string $match_ Found parameter's name
-     * @return float|int
+     * @return int|bool
      */
-    private function _getParameterPos(string $text_, string &$match_) {
+    private function _getParameterPos(string $text_, string &$match_): int|bool {
       $matches = array();
       if (preg_match('/\$[\w]+/', $text_, $matches, PREG_OFFSET_CAPTURE)) {
-        // TODO jo ez igy?
-        if (isset($match_)) {
-          $match_ = $matches[0][0];
-        }
+        $match_ = $matches[0][0];
         
         return 1 * $matches[0][1];
       }
@@ -429,7 +424,7 @@
             $result = $pageBeforeParam . $paramValue . $pageAfterParam;
           }
         } else {
-          if (strpos($paramName, 'template_') === 0) {
+          if (str_starts_with($paramName, 'template_')) {
             $paramValue = $this->getTemplate(
               'inline.' . Eisodos::$utils->replace_all(substr($paramName, 9), '_', '.', true, false),
               array(),
@@ -438,7 +433,7 @@
               false,
               -1
             );
-          } elseif (strpos($paramName, 'templateabs_') === 0) {
+          } elseif (str_starts_with($paramName, 'templateabs_')) {
             if (Eisodos::$parameterHandler->isOn('ENABLETEMPLATEABS')) {
               $paramValue = $this->getTemplate(
                 Eisodos::$utils->replace_all(
@@ -463,7 +458,7 @@
             } else {
               $paramValue = '<!-- Absolute inline templates not allowed -->';
             }
-          } elseif (strpos($paramName, 'callback_') === 0) {
+          } elseif (str_starts_with($paramName, 'callback_')) {
             if (Eisodos::$templateEngine->defaultCallbackFunctionName
               && Eisodos::$parameterHandler->isOn('ENABLEPARAMCALLBACK')) {
               $paramValue =
@@ -518,7 +513,7 @@
      * @param bool $disableLanguageTagParsing_ Disable language tag parsing
      * @param int $templateRow_ Gives back only the specified row
      * @param bool $raiseOnMissingTemplate_ Raise Exception if template not exists
-     * @return Exception|string
+     * @return string
      */
     public function getTemplate(
       string $templateID_,
@@ -528,7 +523,7 @@
       bool   $disableLanguageTagParsing_ = false,
       int    $templateRow_ = -1,
       bool   $raiseOnMissingTemplate_ = false
-    ) {
+    ):string {
       $result = '';
       if (!Eisodos::$parameterHandler->isOn('EditorMode')) {
         foreach (Eisodos::$configLoader->getActiveVersions() as $v) {

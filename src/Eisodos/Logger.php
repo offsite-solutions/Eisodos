@@ -8,10 +8,8 @@
   use Eisodos\Abstracts\Singleton;
   use Exception;
   use Throwable;
-  use PC;
-  use Psr\Log\LoggerInterface;
   
-  final class Logger extends Singleton implements LoggerInterface {
+  final class Logger extends Singleton {
     
     // Private variables
     private array $debugLog = [];
@@ -21,9 +19,9 @@
      */
     private array $debugLevels = [];
     /**
-     * @var bool $_cliMode script running in CLI mode
+     * @var bool $cliMode script running in CLI mode
      */
-    private bool $_cliMode = false;
+    public bool $cliMode = false;
     
     // Public variables
     /**
@@ -97,13 +95,14 @@
      */
     public function init(array $options_): void {
       $this->setDebugLevels($options_);
-      $this->_cliMode = (PHP_SAPI === 'cli');
+      $this->cliMode = (PHP_SAPI === 'cli');
     }
     
     /** Sets debug level
      * @param string $debugLevels_ trace,debug,info,notice,alert,warning,error,emergency,critical
      */
-    public function setDebugLevels(array $debugLevels_): void {
+    public function setDebugLevels(): void {
+      $debugLevels_ = explode(',',Eisodos::$parameterHandler->getParam('DebugLevel'));
       if (count($debugLevels_) === 0) {
         return;
       }
@@ -127,9 +126,9 @@
      * @param array $extraMails_ Send the debug to the mail address specified
      * @return void
      */
-    public function writeErrorLog(?Throwable $throwable_, $debugInformation_ = "", $extraMails_ = array()): void {
+    public function writeErrorLog(?Throwable $throwable_, string $debugInformation_ = "", array $extraMails_ = []): void {
       try {
-        if (strpos(Eisodos::$parameterHandler->getParam('ERROROUTPUT'), '@') !== false) {
+        if (str_contains(Eisodos::$parameterHandler->getParam('ERROROUTPUT'), '@')) {
           $errorOutput = Eisodos::$parameterHandler->getParam('ERROROUTPUT') . ',';
           $error_function = substr($errorOutput, strpos($errorOutput, '@') + 1);
           $error_function = substr($error_function, 0, strpos($error_function, ',') - 1);
@@ -148,7 +147,7 @@
             )
           );
         }
-      } catch (Exception $e) {
+      } catch (Exception) {
         Eisodos::$parameterHandler->setParam(
           'ERROROUTPUT',
           Eisodos::$parameterHandler->getParam('ERROROUTPUT') . ',Mail',
@@ -161,7 +160,7 @@
       $errorString = $this->_generateFileLog($throwable_, $debugInformation_);
       
       try {
-        if (strpos(Eisodos::$parameterHandler->getParam('ERROROUTPUT'), 'File') !== false) {
+        if (str_contains(Eisodos::$parameterHandler->getParam('ERROROUTPUT'), 'File')) {
           $logfile = fopen(
             Eisodos::$templateEngine->replaceParamInString(Eisodos::$parameterHandler->getParam('ERRORLOG')),
             'ab'
@@ -169,7 +168,7 @@
           fwrite($logfile, $errorString);
           fclose($logfile);
         }
-      } catch (Exception $ex) {
+      } catch (Exception) {
         Eisodos::$parameterHandler->setParam(
           'ERROROUTPUT',
           Eisodos::$parameterHandler->getParam('ERROROUTPUT') . ',Mail',
@@ -182,11 +181,11 @@
       try {
         if (Eisodos::$parameterHandler->neq('ERRORMAILTO', '')
           && Eisodos::$parameterHandler->neq('ERRORMAILFROM', '')
-          && strpos(Eisodos::$parameterHandler->getParam('ERROROUTPUT'), 'Mail') !== false) {
+          && str_contains(Eisodos::$parameterHandler->getParam('ERROROUTPUT'), 'Mail')) {
           $extraMails = $extraMails_;
           $extraMails[] = Eisodos::$parameterHandler->getParam('ERRORMAILTO');
           foreach ($extraMails as $row) {
-            Eisodos::$mailer->utf8_html_mail(
+            Eisodos::$mailer->sendMail(
               $row,
               Eisodos::$applicationName . ' error',
               '<html lang="en"><meta content="text/html; charset=utf-8" http-equiv="Content-Type" /><body><pre>' . htmlspecialchars(
@@ -196,11 +195,11 @@
             );
           }
         }
-      } catch (Exception $ex) {
+      } catch (Exception) {
       }
       
-      if ($this->_cliMode === false
-        && strpos(Eisodos::$parameterHandler->getParam('ERROROUTPUT'), 'Screen') !== false
+      if ($this->cliMode === false
+        && str_contains(Eisodos::$parameterHandler->getParam('ERROROUTPUT'), 'Screen')
       ) {
         Eisodos::$templateEngine->addToResponse(
           '<html lang="en"><meta content="text/html; charset=utf-8" http-equiv="Content-Type" /><body><pre>' . htmlspecialchars(
@@ -212,34 +211,30 @@
         exit;
       }
       
-      if ($this->_cliMode === true
-        && strpos(Eisodos::$parameterHandler->getParam('ERROROUTPUT'), 'Screen') !== false
+      if ($this->cliMode === true
+        && str_contains(Eisodos::$parameterHandler->getParam('ERROROUTPUT'), 'Screen')
       ) {
-        print($errorString);
+        print($errorString."\n");
       }
       
-      if ($this->_cliMode === false
-        && strpos(Eisodos::$parameterHandler->getParam('ERROROUTPUT'), 'Console') !== false
-      ) {
-        PC::debug($errorString);
-      }
       
-      if ($this->_cliMode === true
-        && strpos(Eisodos::$parameterHandler->getParam('ERROROUTPUT'), 'Console') !== false
+      
+      if ($this->cliMode === true
+        && str_contains(Eisodos::$parameterHandler->getParam('ERROROUTPUT'), 'Console')
       ) {
-        print($errorString);
+        print($errorString."\n");
       }
     }
     
     /**
-     * Adds debug message to PhpConsole or in CLI Mode to the standard output
+     * Adds debug message to debug log or in CLI Mode to the standard output
      * @param string $text_ Message
      * @param string $debugLevel_ Debug level 'critical','error','info','warning','debug','trace','emergency','alert','notice'
      * @param object|null $sender_ Sender object
      */
-    public function log($text_, $debugLevel_ = 'debug', $sender_ = NULL): void {
+    public function log($text_, string $debugLevel_ = 'debug', object $sender_ = NULL): void {
       
-      if (in_array($debugLevel_, $this->debugLevels, false)) {
+      if (in_array($debugLevel_, $this->debugLevels, true)) {
         $dbt = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3);
         
         if (array_key_exists(2, $dbt)) {
@@ -267,10 +262,8 @@
             $this->traceStep($text_, $this->traceStep)
           ) . $text_;
         
-        if ($this->_cliMode) {
+        if ($this->cliMode) {
           echo($debugText . PHP_EOL);
-        } else if (class_exists('PC', false)) {
-          PC::debug($debugText);
         } else {
           $this->debugLog[] = $debugText;
         }
@@ -285,9 +278,9 @@
      * Log a critical message
      *
      * @param string $text_ Message to be displayed in the log message
-     * @param null $sender_ Sender object. When specified debug will display the name of the sender object. Defaults to `null`.
+     * @param object|null $sender_ Sender object. When specified debug will display the name of the sender object. Defaults to `null`.
      */
-    public function critical($text_, $sender_ = NULL): void {
+    public function critical(string $text_, object $sender_ = NULL): void {
       $this->log($text_, 'critical', $sender_);
     }
     
@@ -297,7 +290,7 @@
      * @param string $text_ Message to be displayed in the log message
      * @param object|null $sender_ Sender object. When specified debug will display the name of the sender object. Defaults to `null`.
      */
-    public function error($text_, $sender_ = NULL): void {
+    public function error(string $text_, object $sender_ = NULL): void {
       $this->log($text_, 'error', $sender_);
     }
     
@@ -307,7 +300,7 @@
      * @param string $text_ Message to be displayed in the log message
      * @param object|null $sender_ Sender object. When specified debug will display the name of the sender object. Defaults to `null`.
      */
-    public function info($text_, $sender_ = NULL): void {
+    public function info(string $text_, object $sender_ = NULL): void {
       $this->log($text_, 'info', $sender_);
     }
     
@@ -317,7 +310,7 @@
      * @param string $text_ Message to be displayed in the log message
      * @param object|null $sender_ Sender object. When specified debug will display the name of the sender object. Defaults to `null`.
      */
-    public function warning($text_, $sender_ = NULL): void {
+    public function warning(string $text_, object $sender_ = NULL): void {
       $this->log($text_, 'warning', $sender_);
     }
     
@@ -327,7 +320,7 @@
      * @param string $text_ Message to be displayed in the log message
      * @param object|null $sender_ Sender object. When specified debug will display the name of the sender object. Defaults to `null`.
      */
-    public function debug($text_, $sender_ = NULL): void {
+    public function debug(string $text_, object $sender_ = NULL): void {
       $this->log($text_, 'debug', $sender_);
     }
     
@@ -337,7 +330,7 @@
      * @param string $text_ Message to be displayed in the log message
      * @param object|null $sender_ Sender object. When specified debug will display the name of the sender object. Defaults to `null`.
      */
-    public function trace($text_, $sender_ = NULL): void {
+    public function trace(string $text_, object $sender_ = NULL): void {
       $this->log($text_, 'trace', $sender_);
     }
     
@@ -347,7 +340,7 @@
      * @param string $text_ Message to be displayed in the log message
      * @param object|null $sender_ Sender object. When specified debug will display the name of the sender object. Defaults to `null`.
      */
-    public function alert($text_, $sender_ = NULL): void {
+    public function alert(string $text_, object $sender_ = NULL): void {
       $this->log($text_, 'alert', $sender_);
     }
     
@@ -357,7 +350,7 @@
      * @param string $text_ Message to be displayed in the log message
      * @param object|null $sender_ Sender object. When specified debug will display the name of the sender object. Defaults to `null`.
      */
-    public function emergency($text_, $sender_ = NULL): void {
+    public function emergency(string $text_, object $sender_ = NULL): void {
       $this->log($text_, 'emergency', $sender_);
     }
     
@@ -367,7 +360,7 @@
      * @param string $text_ Message to be displayed in the log message
      * @param object|null $sender_ Sender object. When specified debug will display the name of the sender object. Defaults to `null`.
      */
-    public function notice($text_, $sender_ = NULL): void {
+    public function notice(string $text_, object $sender_ = NULL): void {
       $this->log($text_, 'notice', $sender_);
     }
     

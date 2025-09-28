@@ -5,7 +5,6 @@
   use Eisodos\Abstracts\Singleton;
   use Eisodos\Interfaces\ParserInterface;
   use Exception;
-  use PC;
   
   /**
    * Class Translator
@@ -163,7 +162,7 @@
       $loopCountLimit = (integer)Eisodos::$parameterHandler->getParam('LOOPCOUNT', '1000');
       $LoopCount = 0;
       while ((Eisodos::$parameterHandler->neq('LANGS', '')
-          and strpos($text_, '[:') !== false)
+          and str_contains($text_, '[:'))
         and $LoopCount <= $loopCountLimit) {
         $translatepos = strpos($text_, '[:');
         
@@ -201,7 +200,7 @@
      * @return string
      */
     public function getLangText(string $languageID_, array $textParams_ = array(), bool $findHashmarked_ = false): string {
-      if (strpos($languageID_, ',') !== false) {
+      if (str_contains($languageID_, ',')) {
         [$languageID_, $defText] = explode(',', $languageID_, 2);
       } else {
         $defText = '';
@@ -214,7 +213,7 @@
         )
       );
       if (!preg_match('/^[#0-9A-Z_.\-]+$/', $languageID_)) {
-        PC::debug('Invalid language tag: ' . $languageID_);
+        Eisodos::$logger->debug('Invalid language tag: ' . $languageID_);
         
         return '';
       }
@@ -269,7 +268,7 @@
           }
           flock($file, LOCK_UN);
         } else {
-          PC::debug('Language file was blocked for writing!');
+          Eisodos::$logger->debug('Language file was blocked for writing!');
         }
         fclose($file);
       }
