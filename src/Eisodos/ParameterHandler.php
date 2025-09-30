@@ -746,7 +746,7 @@
           'domain' => $domain, // leading dot for compatibility or use subdomain
           'secure' => ($this->getParam('COOKIE_SECURE.' . $domain, $this->getParam('COOKIE_SECURE', 'F')) === 'T'),
           'httponly' => ($this->getParam('COOKIE_HTTPONLY.' . $domain, $this->getParam('COOKIE_HTTPONLY', 'F')) === 'T'),    // or false
-          'samesite' => $this->getParam('COOKIE_SAMESITE.' . $domain, $this->getParam('COOKIE_SAMESITE', 'None')) // None || Lax  || Strict
+          'samesite' => $this->getParam('COOKIE_SAMESITE.' . $domain, $this->getParam('COOKIE_SAMESITE', '')) // None || Lax  || Strict
         ];
     }
     

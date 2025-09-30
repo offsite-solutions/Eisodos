@@ -32,7 +32,7 @@
     "Cookie_Path": "/",
     "Cookie_Secure": "T",
     "Cookie_HTTPonly": "T",
-    "Cookie_SameSite": "Lax",
+    "Cookie_SameSite": null,
     "IncludeStatistic": true,
     "TitleString": "%TITLE%",
     "TitleCapitalString": "%TITLECAP%",
