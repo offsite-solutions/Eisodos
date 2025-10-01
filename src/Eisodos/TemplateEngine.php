@@ -156,7 +156,7 @@
     
     /**
      * @param string $templateID_
-     * @param array $listOfValuePairs_
+     * @param array|null $listOfValuePairs_
      * @param bool $addResultToResponse_
      * @param bool $disableParsing_
      * @param bool $disableLanguageTagParsing_
@@ -165,13 +165,13 @@
      * @return string
      */
     private function _getTemplate(
-      string $templateID_,
-      array  $listOfValuePairs_ = array(),
-      bool   $addResultToResponse_ = true,
-      bool   $disableParsing_ = false,
-      bool   $disableLanguageTagParsing_ = false,
-      int    $templateRow_ = -1,
-      bool   $raiseOnMissingTemplate_ = false
+      string     $templateID_,
+      array|null $listOfValuePairs_ = [],
+      bool       $addResultToResponse_ = true,
+      bool       $disableParsing_ = false,
+      bool       $disableLanguageTagParsing_ = false,
+      int        $templateRow_ = -1,
+      bool       $raiseOnMissingTemplate_ = false
     ): string {
       $Page = '';
       if ($templateID_ === '') {
@@ -284,6 +284,10 @@
         }
       }
       
+      if (!$listOfValuePairs_) {
+        $listOfValuePairs_ = [];
+      }
+      
       $Page = $this->parse($Page, $listOfValuePairs_, $disableParsing_);
       
       if ($addResultToResponse_ === true) {
@@ -297,15 +301,15 @@
     
     /**
      * @param string $text_ Part of page
-     * @param array $listOfValuePairs_
+     * @param array|null $listOfValuePairs_
      * @param bool $disableParsing_
      * @return string
      */
-    public function parse(string $text_, array $listOfValuePairs_ = array(), bool $disableParsing_ = false): string {
+    public function parse(string $text_, array|null $listOfValuePairs_ = [], bool $disableParsing_ = false): string {
       $loopCountLimit = (integer)Eisodos::$parameterHandler->getParam('LOOPCOUNT', '1000');
       
       if (!$listOfValuePairs_) {
-        $listOfValuePairs_ = array();
+        $listOfValuePairs_ = [];
       }
       
       foreach ($listOfValuePairs_ as $k => $v) {
@@ -507,7 +511,7 @@
     /**
      * Reads and parses a template
      * @param string $templateID_ Template ID
-     * @param array $listOfValuePairs_ Optional value pairs
+     * @param array|null $listOfValuePairs_ Optional value pairs
      * @param bool $addResultToResponse_ Add to result or just give it back
      * @param bool $disableParsing_ Disable parsing
      * @param bool $disableLanguageTagParsing_ Disable language tag parsing
@@ -516,14 +520,14 @@
      * @return string
      */
     public function getTemplate(
-      string $templateID_,
-      array  $listOfValuePairs_ = array(),
-      bool   $addResultToResponse_ = true,
-      bool   $disableParsing_ = false,
-      bool   $disableLanguageTagParsing_ = false,
-      int    $templateRow_ = -1,
-      bool   $raiseOnMissingTemplate_ = false
-    ):string {
+      string     $templateID_,
+      array|null $listOfValuePairs_ = [],
+      bool       $addResultToResponse_ = true,
+      bool       $disableParsing_ = false,
+      bool       $disableLanguageTagParsing_ = false,
+      int        $templateRow_ = -1,
+      bool       $raiseOnMissingTemplate_ = false
+    ): string {
       $result = '';
       if (!Eisodos::$parameterHandler->isOn('EditorMode')) {
         foreach (Eisodos::$configLoader->getActiveVersions() as $v) {
