@@ -62,10 +62,10 @@
     
     /**
      * Start transaction
-     * @param string|null $savePoint_ Transaction savepoint
+     * @param string $savePoint_ Transaction savepoint
      * @throws Exception
      */
-    public function startTransaction(string $savePoint_ = NULL);
+    public function startTransaction(string $savePoint_);
     
     /**
      * Commit transaction
@@ -74,9 +74,9 @@
     
     /**
      * Rollback transaction
-     * @param string|null $savePoint_ Transaction savepoint
+     * @param string $savePoint_ Transaction savepoint
      */
-    public function rollback(string $savePoint_ = NULL): void;
+    public function rollback(string $savePoint_): void;
     
     /**
      * Is session in transaction mode?
@@ -239,6 +239,9 @@
      * @throws RuntimeException
      */
     public function defaultStrParam(string $parameterName_, bool $isString_ = true, int $maxLength_ = 0, string $exception_ = '', bool $withComma_ = false): string;
+    
+    /** Gives back DB Syntax string */
+    public function DBSyntax():string;
     
   }
 
