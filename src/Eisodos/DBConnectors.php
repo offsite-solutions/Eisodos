@@ -48,7 +48,7 @@
      * @return DBConnectorInterface DB Connector object
      * @throws RuntimeException
      */
-    public function db(string $key_): DBConnectorInterface {
+    public function db(string $key_ = '0'): DBConnectorInterface {
       return $this->connector($key_);
     }
     
@@ -58,7 +58,7 @@
      * @return DBConnectorInterface DB Connector object
      * @throws RuntimeException
      */
-    public function connector(string $key_): DBConnectorInterface {
+    public function connector(string $key_ = '0'): DBConnectorInterface {
       if ($key_ === '') {
         $key_ = '0';
       }
