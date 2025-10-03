@@ -4,7 +4,8 @@
   
   use Eisodos\Abstracts\Singleton;
   use Eisodos\Interfaces\DBConnectorInterface;
-
+  use RuntimeException;
+  
   /**
    * Eisodos DB Connectors singleton class, usage:
    *
@@ -23,39 +24,50 @@
     
     /**
      * @param $connector_ DBConnectorInterface DB Connector Interface object
-     * @param int|string|null $index_ Connector's index if needed
+     * @param string $key_ Connector's index if needed
      * @return DBConnectorInterface
+     * @throws RuntimeException
      */
-    public function registerDBConnector(DBConnectorInterface $connector_, $index_ = NULL): DBConnectorInterface {
-      if ($index_ === NULL || $index_ === '') {
-        $this->_dbConnectors[] =& $connector_;
-      } else {
-        $this->_dbConnectors[(int)$index_] =& $connector_;
+    public function registerDBConnector(DBConnectorInterface $connector_, string $key_ = '0'): DBConnectorInterface {
+      if ($key_ === '') {
+        $key_ = '0';
       }
+      
+      if (array_key_exists($key_, $this->_dbConnectors)) {
+        throw new RuntimeException('DB Connector index already exists: ' . $key_);
+      }
+      
+      $this->_dbConnectors[$key_] =& $connector_;
       
       return $connector_;
     }
     
     /**
      * Access one of the DB Connectors object - kept for backward compatibility
-     * @param int|string|null $index_ connector object's index
+     * @param string $key_ connector object's index
      * @return DBConnectorInterface DB Connector object
+     * @throws RuntimeException
      */
-    public function db(int|string $index_ = NULL) {
-      return $this->connector(($index_));
+    public function db(string $key_): DBConnectorInterface {
+      return $this->connector($key_);
     }
     
     /**
      * Access one of the DB Connectors object
-     * @param int|string|null $index_ connector object's index, if empty gives back the first connector
+     * @param string $key_ connector object's index, if empty gives back the first connector
      * @return DBConnectorInterface DB Connector object
+     * @throws RuntimeException
      */
-    public function connector(int|string $index_ = NULL) {
-      if ($index_ === NULL || $index_ === '') {
-        return $this->_dbConnectors[0];
+    public function connector(string $key_): DBConnectorInterface {
+      if ($key_ === '') {
+        $key_ = '0';
       }
-  
-      return $this->_dbConnectors[(int)$index_ - 1];
+      
+      if (!array_key_exists($key_, $this->_dbConnectors)) {
+        throw new RuntimeException('DB Connector index not exists: ' . $key_);
+      }
+      
+      return $this->_dbConnectors[$key_];
     }
     
     /**
