@@ -62,10 +62,10 @@
     
     /**
      * Start transaction
-     * @param string $savePoint_ Transaction savepoint
+     * @param string|null $savePoint_ Transaction savepoint
      * @throws Exception
      */
-    public function startTransaction(string $savePoint_);
+    public function startTransaction(string|null $savePoint_ = NULL);
     
     /**
      * Commit transaction
@@ -74,9 +74,9 @@
     
     /**
      * Rollback transaction
-     * @param string $savePoint_ Transaction savepoint
+     * @param string|null $savePoint_ Transaction savepoint
      */
-    public function rollback(string $savePoint_): void;
+    public function rollback(string|null $savePoint_ = NULL): void;
     
     /**
      * Is session in transaction mode?
@@ -90,7 +90,7 @@
      * @param bool $throwException_
      * @return int|bool Affected rows - false on error in case of exception didn't throw
      */
-    public function executeDML(string $SQL_, bool $throwException_ = true):int|bool;
+    public function executeDML(string $SQL_, bool $throwException_ = true): int|bool;
     
     /**
      * Execute prepared DML
@@ -100,7 +100,7 @@
      * @param bool $throwException_
      * @return int|bool Affected rows - false on error in case of exception didn't throw
      */
-    public function executePreparedDML(string $SQL_, array $dataTypes_ = [], array &$data_ = [], bool $throwException_ = true):int|bool;
+    public function executePreparedDML(string $SQL_, array $dataTypes_ = [], array &$data_ = [], bool $throwException_ = true): int|bool;
     
     /**
      * Execute prepared DML
@@ -110,7 +110,7 @@
      * @return int|bool Affected rows - false on error in case of exception didn't throw
      * @throws RuntimeException
      */
-    public function executePreparedDML2(string $SQL_, array $boundVariables_, bool $throwException_ = true):int|bool;
+    public function executePreparedDML2(string $SQL_, array $boundVariables_, bool $throwException_ = true): int|bool;
     
     /**
      * Preparing stored procedure parameter for binding
@@ -145,21 +145,21 @@
      * Run SQL query and get its result
      * @param int $resultTransformation_ Result transformation type constant
      * @param string $SQL_ SQL sentence
-     * @param mixed $queryResult_ Result array
-     * @param array $getOptions_ =[
+     * @param array|null $queryResult_ Result array
+     * @param array|null $getOptions_ =[
      *     'indexFieldName',   // index Field name is used in RT_ALL_ROWS
      *     ] Additional options
-     * @param string $exceptionMessage_
+     * @param string|null $exceptionMessage_
      * @return mixed
      * @throws Exception
      */
     public function query(
-      int    $resultTransformation_,
-      string $SQL_,
-      array  &$queryResult_ = NULL,
-      array  $getOptions_ = [],
-      string $exceptionMessage_ = ''
-    ):mixed;
+      int     $resultTransformation_,
+      string  $SQL_,
+      ?array  &$queryResult_ = NULL,
+      ?array  $getOptions_ = [],
+      ?string $exceptionMessage_ = ''
+    ): mixed;
     
     /**
      * Gives back the last query's column names
@@ -177,7 +177,7 @@
      * Get native connection object
      * @return mixed
      */
-    public function getConnection():mixed;
+    public function getConnection(): mixed;
     
     /**
      * Converts value to SQL keyword if empty
@@ -241,7 +241,7 @@
     public function defaultStrParam(string $parameterName_, bool $isString_ = true, int $maxLength_ = 0, string $exception_ = '', bool $withComma_ = false): string;
     
     /** Gives back DB Syntax string */
-    public function DBSyntax():string;
+    public function DBSyntax(): string;
     
   }
 
