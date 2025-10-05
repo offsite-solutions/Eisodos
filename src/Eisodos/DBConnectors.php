@@ -1,4 +1,4 @@
-<?php /** @noinspection DuplicatedCode SpellCheckingInspection PhpUnusedFunctionInspection NotOptimalIfConditionsInspection */
+<?php /** @noinspection ALL */
   
   namespace Eisodos;
   

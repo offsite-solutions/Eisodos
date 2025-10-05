@@ -12,10 +12,10 @@
     /**
      * Parse page
      * @param string $text_ The currently generated page
-     * @param int|bool $blockPosition_ The identified openTag first occurrence in text_
+     * @param bool|int $blockPosition_ The identified openTag first occurrence in text_
      * @return string The new page after parsing
      */
-    public function parse(string $text_, $blockPosition_ = false): string;
+    public function parse(string $text_, bool|int $blockPosition_ = false): string;
     
     /**
      * Defines the opening tag

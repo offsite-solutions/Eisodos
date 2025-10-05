@@ -4,7 +4,6 @@
   
   use Eisodos\Abstracts\Singleton;
   use Exception;
-  use PC;
   
   /*
    * TODO: (low) config file editor
@@ -20,8 +19,8 @@
    */
   final class ConfigLoader extends Singleton {
     
-    public const CONFIG_TYPE_INI = 0;
-    public const CONFIG_TYPE_JSON = 1;
+    public const int CONFIG_TYPE_INI = 0;
+    public const int CONFIG_TYPE_JSON = 1;
     
     /**
      * @var string $_activeVersionsString List of active versions
@@ -50,6 +49,7 @@
     
     /**
      * @var array
+     * @noinspection PhpGetterAndSetterCanBeReplacedWithPropertyHooksInspection
      */
     private array $_activeVersions;
     

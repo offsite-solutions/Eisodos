@@ -26,7 +26,7 @@
     /**
      * @inheritDoc
      */
-    public function parse(string $text_, $blockPosition_ = false): string {
+    public function parse(string $text_, bool|int $blockPosition_ = false): string {
       $orig = '';
       try {
         $structure = substr($text_, strpos($text_, '<%') + 2);
@@ -77,9 +77,9 @@
         
         foreach ($blockLines as $blockLine) {
           if ($multiLineSeparator === ''
-            and strpos($blockLine, '>>') !== false) {
+            && str_contains($blockLine, '>>')) {
             $parameterName = (trim(substr($blockLine, 0, strpos($blockLine, '>>'))));
-            if (strpos($parameterName, '@') === 0) {
+            if (str_starts_with($parameterName, '@')) {
               $parseValue = true;
               $parameterName = substr($parameterName, 1);
             } else {
@@ -89,15 +89,14 @@
             $multiLineSeparator = substr($multiLineSeparator, 0, strpos($multiLineSeparator, '='));
             $multiLineCloseSeparator = Eisodos::$utils->replace_all($multiLineSeparator, '>', '<');
             $LFuncParams[$parameterName] = substr($blockLine, strpos($blockLine, '=') + 1);
-          } elseif ($multiLineSeparator === '' and strlen($blockLine) >= 2) {
+          } elseif ($multiLineSeparator === '' && strlen($blockLine) >= 2) {
             $parameterName = (trim(substr($blockLine, 0, strpos($blockLine, '='))));
-            if (strpos($parameterName, '@') === 0) {
+            if (str_starts_with($parameterName, '@')) {
               $parseValue = true;
               $parameterName = substr($parameterName, 1);
             } else {
               $parseValue = false;
             }
-            $multiLineSeparator = '';
             $value = substr($blockLine, strpos($blockLine, '=') + 1);
             switch ($parameterName) {
               case '_include':

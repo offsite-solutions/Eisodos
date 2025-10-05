@@ -23,7 +23,7 @@
     /**
      * @inheritDoc
      */
-    public function parse(string $text_, $blockPosition_ = false): string {
+    public function parse(string $text_, bool|int $blockPosition_ = false): string {
       $closeTagPosition = strpos($text_, '%]');
       $functionBody = '';
       foreach (

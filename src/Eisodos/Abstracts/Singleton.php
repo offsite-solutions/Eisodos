@@ -11,7 +11,7 @@
      * array, because we'll allow our Singleton to have subclasses. Each item in
      * this array will be an instance of a specific Singleton's subclass.
      *
-     * @var static $instances instances
+     * @var Singleton[] $instances instances
      */
     protected static array $instances = [];
     

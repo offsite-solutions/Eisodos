@@ -178,6 +178,8 @@
         return '';
       }
       
+      Eisodos::$parameterHandler->setParam('LastRenderedTemplateID', $templateID_);
+      
       if (isset($this->_templateCache[$templateID_]) && !Eisodos::$parameterHandler->isOn('EditorMode')) {
         $Page = $this->_templateCache[$templateID_];
       }
@@ -193,7 +195,7 @@
         $LangSpec = '';
       }
       
-      $TemplateFile = '';
+      $templateFile = '';
       // ha a templateId tartalmaz / jelet, akkor megnezni, hogy ehhez tartozik-e kulon config konyvtar
       if (str_contains($templateID_, '/')) {
         $templateDir = Eisodos::$parameterHandler->getParam(explode('/', $templateID_, 2)[0] . '.TEMPLATEDIR');
@@ -207,28 +209,29 @@
       // TODO EditorMode-ban engedelyezni a template-ek betolteset abszolut path-rol (vendor/EisodosEditor/templates/) hogy ne kelljen linkelni
       
       if ($Page === '') {
+        /** @noinspection HttpUrlsUsage */
         if (!str_contains($templateDir, 'http://')
           && !str_contains($templateDir, 'https://')) {
           if (file_exists($templateDir . $LangSpec . $templateID_ . '.template')) {
-            $TemplateFile = $templateDir . $LangSpec . $templateID_ . '.template';
+            $templateFile = $templateDir . $LangSpec . $templateID_ . '.template';
           } elseif (Eisodos::$parameterHandler->neq('DEFTEMPLATELANG', '')) {
             if (file_exists(
               $templateDir . Eisodos::$parameterHandler->getParam('DEFTEMPLATELANG') .
               DIRECTORY_SEPARATOR . $templateID_ . '.template'
             )) {
-              $TemplateFile = $templateDir . Eisodos::$parameterHandler->getParam('DEFTEMPLATELANG') .
+              $templateFile = $templateDir . Eisodos::$parameterHandler->getParam('DEFTEMPLATELANG') .
                 DIRECTORY_SEPARATOR . $templateID_ . '.template';
             }
           }
         } else {
           // http-rol kapja a template-t
-          $TemplateFile = $templateDir . $LangSpec . $templateID_ . '.template';
+          $templateFile = $templateDir . $LangSpec . $templateID_ . '.template';
         }
       }
       
-      if ($TemplateFile !== '') {
+      if ($templateFile !== '') {
         $cLine = 0;
-        $file = fopen($TemplateFile, 'rb');
+        $file = fopen($templateFile, 'rb');
         if (!($file === false)) {
           while (!feof($file)) {
             $line = rtrim(fgets($file));
@@ -276,7 +279,7 @@
       } elseif ($Page === '') {
         if (Eisodos::$parameterHandler->isOn('SHOWMISSINGTEMPLATE')) {
           Eisodos::$render->pageDebugInfo(
-            'No template found with name: [' . $LangSpec . $templateID_ . '] (' . $TemplateFile . ')'
+            'No template found with name: [' . $templateDir . $LangSpec . $templateID_ . '] (' . $templateFile . ')'
           );
         }
         if ($raiseOnMissingTemplate_ === true) {

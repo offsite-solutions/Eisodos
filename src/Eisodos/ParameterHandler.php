@@ -7,7 +7,6 @@
   
   use Eisodos\Abstracts\Singleton;
   use Exception;
-  use PC;
   use RuntimeException;
   
   /**
@@ -186,7 +185,7 @@
      */
     public function eq(
       string $parameterName_,
-             $value_,
+      mixed  $value_,
       string $defaultValue_ = '',
       bool   $caseInsensitive_ = true,
       bool   $trimValue_ = true
@@ -394,12 +393,12 @@
     /**
      * Loads parameters into the parameter array by the rules defined in the .params file
      * @param array $parameters_
-     * @param bool $base64Decode_
-     * @return float|int
+     * @return float CRC value of loaded params
+     * @noinspection MultiAssignmentUsageInspection
      */
     private function _loadInputParams(
       array $parameters_ = array()
-    ) {
+    ): float {
       $result = 0;
       
       $LParamFilters2 = array();
@@ -707,7 +706,7 @@
           }
           flock($file, LOCK_UN);
         } else {
-          Eisodos::debug('Parameter file was blocked for writing!');
+          Eisodos::$logger->debug('Parameter file was blocked for writing!');
         }
         fclose($file);
       }
@@ -746,7 +745,7 @@
           'domain' => $domain, // leading dot for compatibility or use subdomain
           'secure' => ($this->getParam('COOKIE_SECURE.' . $domain, $this->getParam('COOKIE_SECURE', 'F')) === 'T'),
           'httponly' => ($this->getParam('COOKIE_HTTPONLY.' . $domain, $this->getParam('COOKIE_HTTPONLY', 'F')) === 'T'),    // or false
-          'samesite' => $this->getParam('COOKIE_SAMESITE.' . $domain, $this->getParam('COOKIE_SAMESITE', '')) // None || Lax  || Strict
+          'samesite' => $this->getParam('COOKIE_SAMESITE.' . $domain, $this->getParam('COOKIE_SAMESITE')) // None || Lax  || Strict
         ];
     }
     
@@ -865,7 +864,7 @@
         } // cleanup cookies except permanent and raw cookies
         elseif ($v['flag'] === 'c'
           && Eisodos::$utils->safe_array_value($this->_cookies, $key) === ''
-          && !in_array(strtolower($key), explode(',', strtolower($this->getParam('RAWCOOKIES', ''))), true)) {
+          && !in_array(strtolower($key), explode(',', strtolower($this->getParam('RAWCOOKIES'))), true)) {
           $this->_params[$key]['value'] = '';
         }
       }

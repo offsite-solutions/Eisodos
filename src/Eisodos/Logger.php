@@ -12,6 +12,7 @@
   final class Logger extends Singleton {
     
     // Private variables
+    /** @noinspection PhpGetterAndSetterCanBeReplacedWithPropertyHooksInspection */
     private array $debugLog = [];
     
     /**
@@ -66,7 +67,13 @@
       return $st;
     }
     
-    private function traceStep($text_, &$traceStep_) {
+    /**
+     * Step trace counter forward
+     * @var string $text_
+     * @var int $traceStep_
+     * @return int
+     */
+    private function traceStep(string $text_, int &$traceStep_): int {
       switch ($text_) {
         case 'BEGIN':
           {
@@ -232,7 +239,7 @@
      * @param string $debugLevel_ Debug level 'critical','error','info','warning','debug','trace','emergency','alert','notice'
      * @param object|null $sender_ Sender object
      */
-    public function log($text_, string $debugLevel_ = 'debug', object $sender_ = NULL): void {
+    public function log(string $text_, string $debugLevel_ = 'debug', object|null $sender_ = NULL): void {
       
       if (in_array($debugLevel_, $this->debugLevels, true)) {
         $dbt = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 3);
@@ -280,7 +287,7 @@
      * @param string $text_ Message to be displayed in the log message
      * @param object|null $sender_ Sender object. When specified debug will display the name of the sender object. Defaults to `null`.
      */
-    public function critical(string $text_, object $sender_ = NULL): void {
+    public function critical(string $text_, object|null $sender_ = NULL): void {
       $this->log($text_, 'critical', $sender_);
     }
     
@@ -290,7 +297,7 @@
      * @param string $text_ Message to be displayed in the log message
      * @param object|null $sender_ Sender object. When specified debug will display the name of the sender object. Defaults to `null`.
      */
-    public function error(string $text_, object $sender_ = NULL): void {
+    public function error(string $text_, object|null $sender_ = NULL): void {
       $this->log($text_, 'error', $sender_);
     }
     
@@ -300,7 +307,7 @@
      * @param string $text_ Message to be displayed in the log message
      * @param object|null $sender_ Sender object. When specified debug will display the name of the sender object. Defaults to `null`.
      */
-    public function info(string $text_, object $sender_ = NULL): void {
+    public function info(string $text_, object|null $sender_ = NULL): void {
       $this->log($text_, 'info', $sender_);
     }
     
@@ -310,7 +317,7 @@
      * @param string $text_ Message to be displayed in the log message
      * @param object|null $sender_ Sender object. When specified debug will display the name of the sender object. Defaults to `null`.
      */
-    public function warning(string $text_, object $sender_ = NULL): void {
+    public function warning(string $text_, object|null $sender_ = NULL): void {
       $this->log($text_, 'warning', $sender_);
     }
     
@@ -320,7 +327,7 @@
      * @param string $text_ Message to be displayed in the log message
      * @param object|null $sender_ Sender object. When specified debug will display the name of the sender object. Defaults to `null`.
      */
-    public function debug(string $text_, object $sender_ = NULL): void {
+    public function debug(string $text_, object|null $sender_ = NULL): void {
       $this->log($text_, 'debug', $sender_);
     }
     
@@ -330,7 +337,7 @@
      * @param string $text_ Message to be displayed in the log message
      * @param object|null $sender_ Sender object. When specified debug will display the name of the sender object. Defaults to `null`.
      */
-    public function trace(string $text_, object $sender_ = NULL): void {
+    public function trace(string $text_, object|null $sender_ = NULL): void {
       $this->log($text_, 'trace', $sender_);
     }
     
@@ -340,7 +347,7 @@
      * @param string $text_ Message to be displayed in the log message
      * @param object|null $sender_ Sender object. When specified debug will display the name of the sender object. Defaults to `null`.
      */
-    public function alert(string $text_, object $sender_ = NULL): void {
+    public function alert(string $text_, object|null $sender_ = NULL): void {
       $this->log($text_, 'alert', $sender_);
     }
     
@@ -350,7 +357,7 @@
      * @param string $text_ Message to be displayed in the log message
      * @param object|null $sender_ Sender object. When specified debug will display the name of the sender object. Defaults to `null`.
      */
-    public function emergency(string $text_, object $sender_ = NULL): void {
+    public function emergency(string $text_, object|null $sender_ = NULL): void {
       $this->log($text_, 'emergency', $sender_);
     }
     
@@ -360,7 +367,7 @@
      * @param string $text_ Message to be displayed in the log message
      * @param object|null $sender_ Sender object. When specified debug will display the name of the sender object. Defaults to `null`.
      */
-    public function notice(string $text_, object $sender_ = NULL): void {
+    public function notice(string $text_, object|null $sender_ = NULL): void {
       $this->log($text_, 'notice', $sender_);
     }
     

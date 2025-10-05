@@ -152,7 +152,6 @@
     
     /**
      * Sends mail to series of targets with attachments
-     * @param TemplateEngine $templateEngine_ Template Engine for generating body of the mail
      * @param array $to_ Mail targets ["address"=>"param1=value\nparam2=value"]
      * @param string $subject_ Subject
      * @param string $bodyTemplate_ Name of the body template

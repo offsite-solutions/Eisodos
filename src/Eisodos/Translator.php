@@ -291,7 +291,7 @@
     /**
      * @inheritDoc
      */
-    public function parse(string $text_, $blockPosition_ = false): string {
+    public function parse(string $text_, bool|int $blockPosition_ = false): string {
       return Eisodos::$utils->replace_all(
         $text_,
         substr($text_, $blockPosition_, strpos($text_, ':]') - $blockPosition_ + 2),

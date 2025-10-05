@@ -30,20 +30,14 @@
      */
     private string $_pageDebugInfo = '';
     
-    // Private functions
-    
-    /**
-     * Render initialization
-     * @param array $options_
-     * @return Singleton|void
-     */
-    public function init(array $options_ = []): Singleton {
-    }
-    
     /**
      *
      * @noinspection DuplicatedCode
      */
+    
+    protected function init(array $options_): void {
+      // noop
+    }
     
     /**
      * Adds debug message
@@ -85,7 +79,7 @@
         die('Application name is missing');
       }
       
-      Eisodos::$logger->init(['logLevel'=>$logLevel_]);
+      Eisodos::$logger->init(['logLevel' => $logLevel_]);
       Eisodos::$logger->trace('BEGIN', $this);
       
       ob_start();
@@ -100,7 +94,7 @@
       Eisodos::$logger->trace('Objects initialized', $this);
       
       // check if URL contains debugparameters
-      if (($debugURLPrefix = Eisodos::$parameterHandler->getParam('DEBUGURLPREFIX', '')) !== '') {
+      if (($debugURLPrefix = Eisodos::$parameterHandler->getParam('DEBUGURLPREFIX')) !== '') {
         if (Eisodos::$parameterHandler->neq('SessionDebugLevel', '') || Eisodos::$parameterHandler->neq($debugURLPrefix . 'DebugLevel', '')) {
           $debugLevel = Eisodos::$parameterHandler->getParam($debugURLPrefix . 'DebugLevel', Eisodos::$parameterHandler->getParam('SessionDebugLevel'));
           Eisodos::$parameterHandler->setParam('SessionDebugLevel', $debugLevel, true, false, 'eisodos::render');
@@ -188,11 +182,11 @@
      * @return string
      */
     public function currentPageURL(): string {
-      function strleft($s1, $s2) {
+      function strleft($s1, $s2): string {
         return substr($s1, 0, strpos($s1, $s2));
       }
       
-      $serverrequri = $_SERVER['REQUEST_URI'] ?? $_SERVER['PHP_SELF'];
+      $serverReqUri = $_SERVER['REQUEST_URI'] ?? $_SERVER['PHP_SELF'];
       
       $protocol = strleft(
           strtolower($_SERVER['SERVER_PROTOCOL']),
@@ -200,7 +194,7 @@
         ) . ((!empty($_SERVER['HTTPS']) and $_SERVER['HTTPS'] === 'on') ? 's' : '');
       $port = ($_SERVER['SERVER_PORT'] === '80') ? '' : (':' . $_SERVER['SERVER_PORT']);
       
-      return $protocol . '://' . $_SERVER['SERVER_NAME'] . $port . $serverrequri;
+      return $protocol . '://' . $_SERVER['SERVER_NAME'] . $port . $serverReqUri;
     }
     
     /**
@@ -372,7 +366,7 @@
             );
             $title = substr($this->Response, $a, $b - $a);
             if (Eisodos::$parameterHandler->isOn('TITLECUT')) {
-              if (strpos('<', $title) !== false) {
+              if (str_contains('<', $title)) {
                 $title = substr($title, 0, strpos('<', $title) - 1);
               }
             } else {

@@ -42,7 +42,7 @@
      * @param $occurence
      * @return bool|int
      */
-    public function _strpos_offset($needle, $haystack, $occurence) {
+    public function _strpos_offset($needle, $haystack, $occurence): bool|int {
       if (($o = strpos($haystack, $needle)) === false) {
         return false;
       }
@@ -109,7 +109,7 @@
      * @param array $listOfValuePairs_
      * @return mixed|string
      */
-    public function ODecode(array $listOfValuePairs_ = []): string {
+    public function ODecode(array $listOfValuePairs_ = []): mixed {
       if (count($listOfValuePairs_) % 2 !== 0) {
         $listOfValuePairs_[] = '';
       }

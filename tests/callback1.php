@@ -5,21 +5,23 @@
   use Eisodos\Eisodos;
   
   function callback_default($LFuncParams = array(), $parameterPrefix_ = '') {
-    if ($LFuncParams["function"] == "eq") {
+    if ($LFuncParams["function"] === "eq") {
       if (Eisodos::$parameterHandler->eq($LFuncParams["param"], $LFuncParams["value"])) {
         return Eisodos::$templateEngine->getTemplate($LFuncParams["true"], array(), false);
-      } else {
-        return Eisodos::$templateEngine->getTemplate($LFuncParams["false"], array(), false);
       }
-    } elseif ($LFuncParams["function"] == "eqs") {
+      
+      return Eisodos::$templateEngine->getTemplate($LFuncParams["false"], array(), false);
+    }
+    
+    if ($LFuncParams["function"] === "eqs") {
       if (Eisodos::$parameterHandler->eq($LFuncParams["param"], $LFuncParams["value"])) {
         return $LFuncParams["true"];
-      } else {
-        return $LFuncParams["false"];
       }
-    } else {
-      return "";
+      
+      return $LFuncParams["false"];
     }
+    
+    return "";
   }
   
   function eqs($param_, $value_, $true_, $false_, $parameterPrefix_ = '') {
