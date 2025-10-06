@@ -11,7 +11,7 @@
    *
    * @package Eisodos
    */
-  class DBConnectors extends Singleton {
+  final class DBConnectors extends Singleton {
     
     private array $_dbConnectors = [];
     

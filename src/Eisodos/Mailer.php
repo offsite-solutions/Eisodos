@@ -8,7 +8,7 @@
   use PHPMailer\PHPMailer\Exception as PHPMailerException;
   use RuntimeException;
   
-  final class Mailer extends Singleton {
+  class Mailer extends Singleton {
     
     // Private variables
     

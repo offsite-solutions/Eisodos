@@ -9,7 +9,7 @@
   use Exception;
   use Throwable;
   
-  final class Logger extends Singleton {
+  class Logger extends Singleton {
     
     // Private variables
     /** @noinspection PhpGetterAndSetterCanBeReplacedWithPropertyHooksInspection */
@@ -133,7 +133,7 @@
      * @param array $extraMails_ Send the debug to the mail address specified
      * @return void
      */
-    public function writeErrorLog(?Throwable $throwable_, string $debugInformation_ = "", array $extraMails_ = []): void {
+    public function writeErrorLog(Throwable|NULL $throwable_, string $debugInformation_ = "", array $extraMails_ = []): void {
       try {
         if (str_contains(Eisodos::$parameterHandler->getParam('ERROROUTPUT'), '@')) {
           $errorOutput = Eisodos::$parameterHandler->getParam('ERROROUTPUT') . ',';

@@ -205,6 +205,18 @@
     public function nullStr(mixed $value_, bool $isString_ = true, int $maxLength_ = 0, string $exception_ = '', bool $withComma_ = false): string;
     
     /**
+     * Converts comma separated values to SQL list
+     * @param mixed $value_ Value
+     * @param bool $isString_ Value is string
+     * @param int $maxLength_ Maximum length of column
+     * @param string $exception_ Throw exception in case of error
+     * @param bool $withComma_ add comma to end of text
+     * @return string
+     * @throws RuntimeException
+     */
+    public function toList(mixed $value_, bool $isString_ = true, int $maxLength_ = 0, string $exception_ = '', bool $withComma_ = false): string;
+    
+    /**
      * Converts value to DEFAULT if empty
      * @param mixed $value_ Value
      * @param bool $isString_ Value is string
