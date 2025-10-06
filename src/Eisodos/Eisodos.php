@@ -90,6 +90,8 @@
       } catch (Exception) {
         die('Initialization failure');
       }
+      
+      self::$logger->init([]); // initial setup from config values
   
       self::$applicationDir = $options_[0];
       self::$applicationName = $options_[1];

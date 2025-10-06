@@ -22,7 +22,8 @@
     "ext-bcmath": "*",
     "ext-json": "*",
     "psr/log": "*",
-    "phpmailer/phpmailer": "*"
+    "phpmailer/phpmailer": "*",
+    "ext-curl": "*"
   },
   "require-dev": {
   },

@@ -86,7 +86,7 @@
       
       Eisodos::$configLoader->init($configOptions_);
       // override initial errorlevel from configuration
-      Eisodos::$logger->setDebugLevels();
+      Eisodos::$logger->setDebugLevels(null);
       Eisodos::$mailer->init();
       Eisodos::$translator->init();
       Eisodos::$parameterHandler->init();

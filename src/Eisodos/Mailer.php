@@ -30,7 +30,7 @@
             fclose($file);
           }
         } else if (Eisodos::$logger->cliMode) {
-          print($e->getMessage()."\n");
+          print($e->getMessage() . "\n");
         }
       } catch (Exception) {
       
@@ -43,8 +43,7 @@
      * Mailer initializer
      * @inheritDoc
      */
-    public function init($options_ = []
-    ): void {
+    public function init($options_ = []): void {
     }
     
     /** Simple "name <email@domain>" to [email, name] parser
