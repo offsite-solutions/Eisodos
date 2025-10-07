@@ -35,6 +35,11 @@
     
     // Private functions
     
+    public function __construct() {
+      parent::__construct();
+      register_shutdown_function(function () { $this->sendOutLogToUrl(); });
+    }
+    
     /**
      * Generates log file
      * @param Throwable|null $throwable_
@@ -335,7 +340,7 @@
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_ENCODING => '',
             CURLOPT_MAXREDIRS => 10,
-            CURLOPT_TIMEOUT => 3,
+            CURLOPT_TIMEOUT => 0,
             CURLOPT_FOLLOWLOCATION => true,
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
             CURLOPT_POST => true,
@@ -351,10 +356,12 @@
           
           curl_exec($curl);
           curl_close($curl);
+          
         }
       } catch (Exception $e) {
       
       }
+      
     }
     
     public function getDebugLog(): array {
@@ -450,9 +457,5 @@
     public function notice(string $text_, object|null $sender_ = NULL): void {
       $this->log($text_, 'notice', $sender_);
     }
-    
-    public function __destruct() {
-      $this->sendOutLogToUrl();
-    }
-    
+
   }
