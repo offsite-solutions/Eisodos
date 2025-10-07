@@ -21,8 +21,8 @@
     "ext-mbstring": "*",
     "ext-bcmath": "*",
     "ext-json": "*",
-    "psr/log": "*",
-    "phpmailer/phpmailer": "*",
+    "psr/log": "3.0.2",
+    "phpmailer/phpmailer": "6.10.0",
     "ext-curl": "*"
   },
   "require-dev": {
