@@ -122,6 +122,10 @@
         array_key_exists('overwrites', $options_) ? $options_['overwrites'] : []
       );
       
+      // reinit logger
+      Eisodos::$logger->setDebugLevels(null);
+      Eisodos::$logger->setDebugOutputs([]);
+      
       Eisodos::$logger->trace('END', $this);
     }
     

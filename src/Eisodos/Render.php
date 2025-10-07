@@ -177,18 +177,19 @@
       Eisodos::$parameterHandler->setParam($parameterName_, $this->currentPageURL(), true, false, 'eisodos::render');
     }
     
+    public function strleft($s1, $s2): string {
+        return substr($s1, 0, strpos($s1, $s2));
+      }
+    
     /**
      * Returns the current page full URL
      * @return string
      */
     public function currentPageURL(): string {
-      function strleft($s1, $s2): string {
-        return substr($s1, 0, strpos($s1, $s2));
-      }
       
       $serverReqUri = $_SERVER['REQUEST_URI'] ?? $_SERVER['PHP_SELF'];
       
-      $protocol = strleft(
+      $protocol = $this->strleft(
           strtolower($_SERVER['SERVER_PROTOCOL']),
           '/'
         ) . ((!empty($_SERVER['HTTPS']) and $_SERVER['HTTPS'] === 'on') ? 's' : '');
