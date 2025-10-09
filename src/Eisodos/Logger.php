@@ -345,9 +345,8 @@
             CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
             CURLOPT_POST => true,
             CURLOPT_POSTFIELDS => implode("\n",$this->getDebugLog()),
-            CURLOPT_USERAGENT => 'Tholos (' . Eisodos::$parameterHandler->getParam('last_tholos_release', 'dev') . ')',
-            CURLOPT_HTTPHEADER => ['X-Tholos-SessionID: ' . Eisodos::$parameterHandler->getParam('Tholos_sessionID'),
-                                   'Content-Type: text/plain'],
+            CURLOPT_USERAGENT => 'Eisodos Framework ('.session_name().')',
+            CURLOPT_HTTPHEADER => ['Content-Type: text/plain','X-Eisodos-Debug-Level: '.implode(',',$this->debugLevels)],
             CURLOPT_HEADER => true,
             CURLOPT_FAILONERROR => false
           );
