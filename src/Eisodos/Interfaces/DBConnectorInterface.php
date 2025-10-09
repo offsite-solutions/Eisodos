@@ -24,6 +24,7 @@
    * RT_ALL_ROWS_ASSOC gives back the whole result set in an associative array, where key field is one the column's value:
    *                   ['d'=>['a'=>'d','b'=>'e','c'='f'],'e'=>['a'=>'g','b'=>'h','c'='j']]
    *                   deprecated function: getSQLtoArrayFull0
+   * RT_NO_ROWS does not fetch query result, oci_fetch_all throws PHP warning in case of no result query's like SET NLS_LANG=''
    */
   
   define('RT_RAW', 0);
@@ -33,6 +34,7 @@
   define('RT_ALL_FIRST_COLUMN_VALUES', 4);
   define('RT_ALL_ROWS', 5);
   define('RT_ALL_ROWS_ASSOC', 6);
+  define('RT_NO_ROWS', 7);
   
   /**
    * Eisodos DB Connector Interface
