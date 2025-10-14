@@ -70,12 +70,17 @@
     ): void {
       Eisodos::$logger->trace('BEGIN', $this);
       
-      // setting default config options values
-      $this->_configPath = Eisodos::$utils->safe_array_value(
-        $options_,
-        'configPath',
-        Eisodos::$parameterHandler->getParam('_applicationDir') . '/config'
-      );
+      // ConfigPath can be overwritten by environment variable EISODOS_CONFIG_PATH
+      if (getenv('EISODOS_CONFIG_PATH')) {
+        $this->_configPath = getenv('EISODOS_CONFIG_PATH');
+      } else {
+        // setting default config options values
+        $this->_configPath = Eisodos::$utils->safe_array_value(
+          $options_,
+          'configPath',
+          Eisodos::$parameterHandler->getParam('_applicationDir') . '/config'
+        );
+      }
       $this->_configType = Eisodos::$utils->safe_array_value($options_, 'configType', self::CONFIG_TYPE_INI);
       
       // setting environment variable
@@ -123,7 +128,7 @@
       );
       
       // reinit logger
-      Eisodos::$logger->setDebugLevels(null);
+      Eisodos::$logger->setDebugLevels(NULL);
       Eisodos::$logger->setDebugOutputs([]);
       
       Eisodos::$logger->trace('END', $this);
