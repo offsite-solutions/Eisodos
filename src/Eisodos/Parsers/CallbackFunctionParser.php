@@ -143,7 +143,7 @@
         }
         
         {
-          if ($include !== '') {
+          if ($include !== '' && !str_contains($include, '::')) {
             /** @noinspection PhpIncludeInspection */
             @require($include);
           }
