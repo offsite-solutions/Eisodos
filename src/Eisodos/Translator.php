@@ -235,8 +235,25 @@
         return ':' . $languageID_;
       }
       
-      return @vsprintf(
-        Eisodos::$utils->safe_array_value(
+      try {
+        return vsprintf(
+          Eisodos::$utils->safe_array_value(
+            $this->userLanguageIDs,
+            $languageID_ . '.' . $currentLanguage,
+            Eisodos::$utils->safe_array_value(
+              $this->_languageIDs,
+              $languageID_ . '.' . $currentLanguage,
+              Eisodos::$utils->safe_array_value(
+                $this->_languageIDs,
+                strtoupper($languageID_ . '.' . Eisodos::$parameterHandler->getParam('DEFLANG')),
+                (Eisodos::$parameterHandler->isOn('SHOWMISSINGLANGIDS') ? ':' . $languageID_ : $defText)
+              )
+            )
+          ),
+          $textParams_
+        );
+      } catch (Exception) {
+        return Eisodos::$utils->safe_array_value(
           $this->userLanguageIDs,
           $languageID_ . '.' . $currentLanguage,
           Eisodos::$utils->safe_array_value(
@@ -248,9 +265,8 @@
               (Eisodos::$parameterHandler->isOn('SHOWMISSINGLANGIDS') ? ':' . $languageID_ : $defText)
             )
           )
-        ),
-        $textParams_
-      );
+        );
+      }
     }
     
     public function finish(): void {
