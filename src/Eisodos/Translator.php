@@ -252,7 +252,7 @@
           ),
           $textParams_
         );
-      } catch (Exception) {
+      } catch (\ValueError) {
         return Eisodos::$utils->safe_array_value(
           $this->userLanguageIDs,
           $languageID_ . '.' . $currentLanguage,
