@@ -833,13 +833,16 @@
      */
     public function params2log(): string {
       $st = '';
+      $needConfig=!Eisodos::$parameterHandler->isOff('ErrorIncludeConfigToLog');
       foreach ($this->_params as $key => $value) {
-        $st .=
-          ($value['source'] === '' ? '' : '[' . $value['source'] . '] ') .
-          ($value['flag'] === '' ? '' : '(' . $value['flag'] . ') ') .
-          ($value['readonly'] ? '(ro) ' : '') .
-          $key . '=' . (strlen($value['value']) > 255 ? substr($value['value'], 0, 255) . '...' : $value['value']) .
-          "\n";
+        if ($needConfig || !str_contains($value['source'], ':config')) {
+          $st .=
+            ($value['source'] === '' ? '' : '[' . $value['source'] . '] ') .
+            ($value['flag'] === '' ? '' : '(' . $value['flag'] . ') ') .
+            ($value['readonly'] ? '(ro) ' : '') .
+            $key . '=' . (strlen($value['value']) > 255 ? substr($value['value'], 0, 255) . '...' : $value['value']) .
+            "\n";
+        }
       }
       
       return $st;
