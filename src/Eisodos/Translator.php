@@ -189,7 +189,7 @@
     public function explodeLangText($languageFormat_, bool $findHashmarked_ = false): string {
       $p = explode(':', $languageFormat_);
       
-      return Eisodos::$translator->getLangText($p[0], explode(';', (count($p) === 1 ? '' : $p[1])), $findHashmarked_);
+      return $this->getLangText($p[0], explode(';', (count($p) === 1 ? '' : $p[1])), $findHashmarked_);
     }
     
     /**
@@ -287,9 +287,6 @@
           Eisodos::$logger->debug('Language file was blocked for writing!');
         }
         fclose($file);
-      } elseif (Eisodos::$parameterHandler->isOn('COLLECTLANGIDS')) {
-        Eisodos::$logger->trace('Language file is not written! '.$this->_languageIDsCRC .' <> '. crc32(print_r($this->_languageIDs, true)).
-        ' number of langids: '.count($this->_languageIDs));
       }
     }
     
@@ -326,8 +323,8 @@
         and Eisodos::$parameterHandler->neq('LANGS', ''));
     }
     
-    public function setCollectLangIds(bool $value_): void {
-      $this->_collectLangIds = $value_;
+    public function setCollectLangIDs(bool $value_): void {
+      $this->_collectLangIDs = $value_;
       Eisodos::$parameterHandler->setParam('COLLECTLANGIDS', ($value_?'T':'F'), false, false, 'eisodos::translator');
     }
     
