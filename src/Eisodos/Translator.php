@@ -288,7 +288,8 @@
         }
         fclose($file);
       } elseif (Eisodos::$parameterHandler->isOn('COLLECTLANGIDS')) {
-        Eisodos::$logger->trace('Language file is not written!'.$this->_languageIDsCRC .' <> '. crc32(print_r($this->_languageIDs, true)));
+        Eisodos::$logger->trace('Language file is not written! '.$this->_languageIDsCRC .' <> '. crc32(print_r($this->_languageIDs, true)).
+        ' number of langids: '.count($this->_languageIDs));
       }
     }
     
