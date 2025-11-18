@@ -287,6 +287,8 @@
           Eisodos::$logger->debug('Language file was blocked for writing!');
         }
         fclose($file);
+      } elseif (Eisodos::$parameterHandler->isOn('COLLECTLANGIDS')) {
+        Eisodos::$logger->trace('Language file is not written!'.$this->_languageIDsCRC .' <> '. crc32(print_r($this->_languageIDs, true)));
       }
     }
     
@@ -321,6 +323,11 @@
     public function enabled(): bool {
       return (Eisodos::$parameterHandler->isOn('TranslateLanguageTags')
         and Eisodos::$parameterHandler->neq('LANGS', ''));
+    }
+    
+    public function setCollectLangIds(bool $value_): void {
+      $this->_collectLangIds = $value_;
+      Eisodos::$parameterHandler->setParam('COLLECTLANGIDS', ($value_?'T':'F'), false, false, 'eisodos::translator');
     }
     
   }
