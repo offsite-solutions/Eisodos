@@ -229,7 +229,7 @@
         fclose($fp);
         
         // read values from the cache
-        if (array_key_exists($section_, $this->_configCache[$configFile])) {
+        if (is_array($this->_configCache[$configFile]) && array_key_exists($section_, $this->_configCache[$configFile])) {
           $array_ = $this->_configCache[$configFile][$section_];
         }
       } else {
