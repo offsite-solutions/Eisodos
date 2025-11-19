@@ -101,7 +101,7 @@
           Eisodos::$parameterHandler->setParam('SessionDebugLevel', $debugLevel, true, false, 'eisodos::render');
           Eisodos::$logger->setDebugLevels(Eisodos::$parameterHandler->getParam('SessionDebugLevel', Eisodos::$parameterHandler->getParam('DEBUGLEVELS')));
           if (Eisodos::$parameterHandler->neq($debugURLPrefix . 'DebugToUrl', '')) {
-            Eisodos::$parameterHandler->setParam('SessionDebugToUrl', $debugURLPrefix . 'DebugToUrl',true, false, 'eisodos::render');
+            Eisodos::$parameterHandler->setParam('SessionDebugToUrl', Eisodos::$parameterHandler->getParam($debugURLPrefix . 'DebugToUrl'),true, false, 'eisodos::render');
           }
           Eisodos::$parameterHandler->setParam('DebugToUrl', Eisodos::$parameterHandler->getParam('SessionDebugToUrl', Eisodos::$parameterHandler->getParam('DEBUGTOURL')));
           if ($debugLevel !== '') {
