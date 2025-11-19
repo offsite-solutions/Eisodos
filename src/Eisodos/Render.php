@@ -95,10 +95,15 @@
       
       // check if URL contains debugparameters
       if (($debugURLPrefix = Eisodos::$parameterHandler->getParam('DEBUGURLPREFIX')) !== '') {
-        if (Eisodos::$parameterHandler->neq('SessionDebugLevel', '') || Eisodos::$parameterHandler->neq($debugURLPrefix . 'DebugLevel', '')) {
+        if (Eisodos::$parameterHandler->neq('SessionDebugLevel', '') ||
+            Eisodos::$parameterHandler->neq($debugURLPrefix . 'DebugLevel', '')) {
           $debugLevel = Eisodos::$parameterHandler->getParam($debugURLPrefix . 'DebugLevel', Eisodos::$parameterHandler->getParam('SessionDebugLevel'));
           Eisodos::$parameterHandler->setParam('SessionDebugLevel', $debugLevel, true, false, 'eisodos::render');
           Eisodos::$logger->setDebugLevels(Eisodos::$parameterHandler->getParam('SessionDebugLevel', Eisodos::$parameterHandler->getParam('DEBUGLEVELS')));
+          if (Eisodos::$parameterHandler->neq($debugURLPrefix . 'DebugToUrl', '')) {
+            Eisodos::$parameterHandler->setParam('SessionDebugToUrl', $debugURLPrefix . 'DebugToUrl',true, false, 'eisodos::render');
+          }
+          Eisodos::$parameterHandler->setParam('DebugToUrl', Eisodos::$parameterHandler->getParam('SessionDebugToUrl', Eisodos::$parameterHandler->getParam('DEBUGTOURL')));
           if ($debugLevel !== '') {
             Eisodos::$parameterHandler->setParam('DEBUGEXCEPTIONS', 'T', false, false, 'eisodos::render');
             Eisodos::$parameterHandler->setParam('DEBUGMESSAGES', 'T', false, false, 'eisodos::render');
@@ -112,26 +117,6 @@
           Eisodos::$parameterHandler->setParam('DEBUGREQUESTLOG', Eisodos::$parameterHandler->getParam('SessionDebugRequestLog'), false, false, 'eisodos::render');
         }
       }
-      
-      /* $debugger = PhpConsole\Helper::register();
-      $handler = PC::getHandler();
-      if (isset($handler, $debugger)) {
-        $handler->setHandleErrors(Eisodos::$parameterHandler->isOn('DEBUGERRORS'));
-        $handler->setHandleExceptions(Eisodos::$parameterHandler->isOn('DEBUGEXCEPTIONS'));
-        $debugger->setSourcesBasePath($_SERVER['DOCUMENT_ROOT']);
-        if (Eisodos::$parameterHandler->neq('DEBUGPASSWORD', '')) {
-          $debugger->setPassword(Eisodos::$parameterHandler->getParam('DEBUGPASSWORD'));
-        }
-        $handler->start();
-        if (!$debugger->isActiveClient() || !(Eisodos::$parameterHandler->isOn('DEBUGMESSAGES'))) {
-          $debugger->setAllowedIpMasks(array('0.0.0.0'));
-        }
-        foreach (Eisodos::$logger->getDebugLog() as $debugText) {
-          PC::debug($debugText);
-        }
-      }
-      
-      Eisodos::$logger->trace('PhpConsole initialized', $this); */
       
       if (Eisodos::$utils->safe_array_value($cacheOptions_, 'disableHTMLCache', false)
         || Eisodos::$parameterHandler->isOn('ALWAYSNOCACHE')) {
