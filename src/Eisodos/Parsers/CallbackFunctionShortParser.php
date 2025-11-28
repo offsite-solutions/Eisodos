@@ -3,7 +3,7 @@
   namespace Eisodos\Parsers;
   
   use Eisodos\Eisodos;
-
+  
   class CallbackFunctionShortParser extends CallbackFunctionParser {
     
     /**
@@ -24,21 +24,21 @@
      * @inheritDoc
      */
     public function parse(string $text_, bool|int $blockPosition_ = false): string {
-      $closeTagPosition = strpos($text_, '%]');
+      $closeTagPosition = strpos(substr($text_, $blockPosition_ + 2), '%]');
       $functionBody = '';
       foreach (
         explode(
           ';',
-          substr($text_, $blockPosition_ + 2, $closeTagPosition - $blockPosition_ - 2)
+          substr($text_, $blockPosition_ + 2, $closeTagPosition)
         ) as $parameter
       ) {
-        $functionBody .= ($functionBody !== '' ? "\n" : '') . $parameter;
+        $functionBody .= $parameter . PHP_EOL;
       }
       $functionBody = '<%FUNC%' . PHP_EOL . $functionBody . '%FUNC%>';
       
       return Eisodos::$utils->replace_all(
         $text_,
-        substr($text_, $blockPosition_, $closeTagPosition - $blockPosition_ + 2),
+        substr($text_, $blockPosition_, $closeTagPosition + 4),
         parent::parse($functionBody, 0),
         false,
         false
