@@ -70,7 +70,7 @@
      * @param array $fileStringsToAttach_ Files as string in format [['content'=>'XXX', 'filename'=>'FFF']]
      * @param string $cc_ CC
      * @param string $bcc_ BCC
-     * @param string $replyto_ Reply to address
+     * @param string $replyTo_ Reply to address
      * @return bool
      */
     public function sendMail(string $to_,
@@ -81,7 +81,7 @@
                              array  $fileStringsToAttach_ = [],
                              string $cc_ = '',
                              string $bcc_ = '',
-                             string $replyto_ = ''): bool {
+                             string $replyTo_ = ''): bool {
       
       try {
         $mail = new PHPMailer(true);
@@ -142,8 +142,8 @@
           }
         }
         
-        if ($replyto_ !== '') {
-          [$toEmail, $toName] = $this->parseEmailAddress(trim($replyto_));
+        if ($replyTo_ !== '') {
+          [$toEmail, $toName] = $this->parseEmailAddress(trim($replyTo_));
           $mail->addReplyTo($toEmail, $toName ?: '');
         }
         
@@ -181,7 +181,7 @@
      * @param array $fileStringsToAttach_
      * @param string $cc_
      * @param string $bcc_
-     * @param string $replyto_
+     * @param string $replyTo_
      * @return bool
      */
     public function utf8_html_mail_attachment(string $to_,
@@ -192,8 +192,8 @@
                                               array  $fileStringsToAttach_ = [],
                                               string $cc_ = '',
                                               string $bcc_ = '',
-                                              string $replyto_ = ''): bool {
-      return $this->sendMail($to_, $subject_, $body_, $from_, $filesToAttach_, $fileStringsToAttach_, $cc_, $bcc_, $replyto_);
+                                              string $replyTo_ = ''): bool {
+      return $this->sendMail($to_, $subject_, $body_, $from_, $filesToAttach_, $fileStringsToAttach_, $cc_, $bcc_, $replyTo_);
     }
     
     /**
@@ -203,6 +203,10 @@
      * @param string $bodyTemplate_ Name of the body template
      * @param string $from_ From address
      * @param array $filesToAttach_ Array of files to attach
+     * @param array $fileStringsToAttach_ Files as string in format [['content'=>'XXX', 'filename'=>'FFF']]
+     * @param string $cc_ CC
+     * @param string $bcc_ BCC
+     * @param string $replyTo_ Reply to address
      * @param int $batch_loopCount_ Number of mails to send in one loop
      * @param int $batch_waitBetweenLoops_ Wait seconds between loops
      * @param bool $batch_echo_ Echo back the result
@@ -219,7 +223,7 @@
       array  $fileStringsToAttach_ = [],
       string $cc_ = '',
       string $bcc_ = '',
-      string $replyto_ = '',
+      string $replyTo_ = '',
       int    $batch_loopCount_ = 50,
       int    $batch_waitBetweenLoops_ = 60,
       bool   $batch_echo_ = false,
@@ -259,7 +263,7 @@
           $body = Eisodos::$templateEngine->getTemplate($bodyTemplate_, array(), false);
           
           try {
-            if (!$testOnly_ && !$this->sendMail($toSend, $subject_, $body, $from_, $filesToAttach_, $fileStringsToAttach_, $cc_, $bcc_, $replyto_)) {
+            if (!$testOnly_ && !$this->sendMail($toSend, $subject_, $body, $from_, $filesToAttach_, $fileStringsToAttach_, $cc_, $bcc_, $replyTo_)) {
               throw new RuntimeException('error sending mail');
             }
             $logTXT = "OK\t$num\t" . $toSend . "\t\t" . date('H:i:s') . "\n";
