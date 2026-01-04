@@ -26,7 +26,7 @@
       }
       
       if (array_key_exists($key_, $array_)) {
-        if ($array_[$key_] === '') {
+        if ($array_[$key_] === '' || $array_[$key_] === NULL) {
           return $defaultValue_;
         }
         
