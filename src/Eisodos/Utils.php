@@ -13,9 +13,9 @@
      * @param string $key_
      * @param string $defaultValue_
      * @param bool $caseInsensitive_
-     * @return string
+     * @return string|array
      */
-    public function safe_array_value(?array $array_, string $key_, string $defaultValue_ = '', bool $caseInsensitive_ = false): string {
+    public function safe_array_value(?array $array_, string $key_, string $defaultValue_ = '', bool $caseInsensitive_ = false): string|array {
       if (!is_array($array_)) {
         return $defaultValue_;
       }
@@ -30,7 +30,7 @@
           return $defaultValue_;
         }
         
-        return (string)$array_[$key_];
+        return $array_[$key_];
       }
       
       return $defaultValue_;
