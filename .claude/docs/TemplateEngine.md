@@ -82,7 +82,9 @@ $status:='active';
 
 ### Absolute Template Include
 
-Include templates from any location:
+Embed templates from the template directory using the `$templateabs_template_name` where from second underscore is replaced with a dot:
+
+Example: `header.main.template` becomes `$templateabs_header_main`
 
 ```html
 <!-- Include header template -->

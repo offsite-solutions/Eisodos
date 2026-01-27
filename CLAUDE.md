@@ -105,11 +105,11 @@ Key parameters:
 $parameterName              # Parameter reference
 $param~='default'           # With default value
 $template_id                # Embed another template
-$templateabs_/path/file     # Absolute path template
+$templateabs_path_file      # Absolute path template, example $templateabs_content_404 embed content.404.template from templates directory
 <%FUNC%name=value%FUNC%>    # Callback function block
 [%func;p1=v1;p2=v2%]        # Short callback syntax
-%ID%LANG_ID%ID%>            # Language ID translation
-##comment line              # Template comment (removed)
+[:LANG_ID,default:]         # Language ID translation
+##comment line              # Template comment (removed in generation step)
 ```
 
 ## Code Conventions
