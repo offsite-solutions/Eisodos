@@ -11,7 +11,6 @@ Eisodos is a PHP 8.4+ page generation framework with singleton-based architectur
 Tests are located in `tests/` and are standalone PHP scripts (no PHPUnit):
 
 ```bash
-# Run a specific test
 php tests/test_configLoader_INI.php
 php tests/test_configLoader_JSON.php
 php tests/test_configLoader_INI_environment.php
@@ -37,28 +36,31 @@ Eisodos::$dbConnectors       // Database connector registry
 Eisodos::$utils              // Utility functions
 ```
 
-### Initialization Flow
+### Bootstrap Example
 
 ```php
-Eisodos::getInstance()->init([__DIR__, 'applicationName']);
-Eisodos::$render->start($configOptions, $cacheOptions, $templateOptions, $logLevel);
+<?php
+use Eisodos\Eisodos;
+
+require_once '../vendor/autoload.php';
+
+Eisodos::getInstance()->init([__DIR__, 'myapp']);
+
+Eisodos::$render->start(
+    ['configType' => Eisodos::$configLoader::CONFIG_TYPE_INI],
+    [],  // Cache options
+    [],  // Template engine options
+    ''   // Debug level (trace/debug/info/warning/error/critical)
+);
+
+require_once(__DIR__ . '/_callbacks.php');
+Eisodos::$templateEngine->setDefaultCallbackFunction('callback_default');
+
 // ... application code ...
-Eisodos::$render->finish();
+
+Eisodos::$render->finish();     // HTML output
+// or Eisodos::$render->finishRaw();  // JSON/raw output
 ```
-
-### Key Modules
-
-- **ParameterHandler** (882 LOC): Merges config, session, cookies, GET/POST into unified parameter store. All parameter names are lowercase. Supports readonly params from config, re-post detection, and dynamic params (`$seq`, `$random`, `$date`).
-
-- **ConfigLoader** (393 LOC): Loads INI or JSON configs. Supports environment-specific files (`{env}-{appname}.conf`), sections (`[Config]`, `[PreInclude]`, `[PostInclude]`, `[Env]`), and caching.
-
-- **TemplateEngine** (569 LOC): Loads `.template` files with language fallback. Supports parameter embedding (`$paramName`), defaults (`$param~='default'`), template nesting (`$template_id`), and callback parsers.
-
-- **Parser System**: Extensible via `ParserInterface`. Built-in parsers:
-  - `CallbackFunctionParser`: `<%FUNC%...%FUNC%>` blocks
-  - `CallbackFunctionShortParser`: `[%function;param=value%]` syntax
-
-- **DBConnectors**: Registry for database connectors implementing `DBConnectorInterface`. Multiple connections supported via keys.
 
 ### Directory Structure
 
@@ -78,38 +80,170 @@ src/Eisodos/
 ├── Mailer.php                    # Email via PHPMailer
 ├── DBConnectors.php              # DB registry
 └── Utils.php                     # Utilities
-tests/
-├── config/                       # Test configuration files
-├── templates/                    # Test template files
-└── test_*.php                    # Test scripts
 ```
 
 ## Configuration
 
-Config files are INI or JSON format with sections. Environment-specific files are loaded first if they exist (`{env}-{appname}.conf`).
+Config files are INI or JSON format with sections. Environment-specific files are loaded first (`{env}-{appname}.conf`).
+
+```ini
+[PreInclude]
+1=global.conf:Config
+
+[PostInclude]
+1=version.conf:Version
+
+[Config]
+TemplateDir=/app/templates/
+.ErrorLog=$_applicationDir/logs/$_applicationName-error.log
+ErrorOutput=File,Mail
+```
 
 Key sections:
 - `[Config]` - Main parameters (loaded into ParameterHandler)
-- `[PreInclude]` / `[PostInclude]` - Config file includes
+- `[PreInclude]` / `[PostInclude]` - Config file includes with format `file:Section`
 - `[Env]` - Environment variables to set
 
-Key parameters:
-- `TemplateDir` - Root template directory
-- `DebugLevel` - trace/debug/info/warning/error/critical
-- `ErrorOutput` - Screen, File, Mail, or @callback
-- `Langs`, `DefLang`, `LangIDFile` - Translation settings
+Readonly parameters: prefix with `.` to prevent override (e.g., `.ErrorLog`)
+
+## Parameter Handling
+
+```php
+// Get/set parameters
+$value = Eisodos::$parameterHandler->getParam('key', 'default');
+Eisodos::$parameterHandler->setParam('key', 'value', $sessionStored, $cookieStored);
+
+// Comparison methods
+Eisodos::$parameterHandler->eq('status', 'active')   // equals
+Eisodos::$parameterHandler->neq('error', '')         // not equals (common for empty check)
+Eisodos::$parameterHandler->isOn('DEBUG')            // T, ON, 1, TRUE, YES, Y
+Eisodos::$parameterHandler->isOff('CACHE')           // F, OFF, 0, FALSE, NO, N
+
+// Reference another parameter with ^ prefix
+Eisodos::$parameterHandler->setParam('current', '^default_lang');
+```
+
+### Built-in Dynamic Variables
+
+| Variable | Description |
+|----------|-------------|
+| `$seq`, `$seq0`, `$seql`, `$seqbit` | Sequence counter, reset, last value, modulo 2 |
+| `$currdate` | Current year |
+| `$random` | Random 8-char string |
+| `$_sessionid` | Session ID |
+| `$https` | Protocol (http/https) |
+| `$lnbr` | Line break (PHP_EOL) |
+| `$env_VARNAME` | Environment variable |
+
+### Parameter Filtering (.params file)
+
+```
+input;username;text;;
+input;page;numeric;;
+input;email;/^[a-z0-9@.]+$/i;/error;;
+session;user_id;;;
+protected;admin_action;;;
+permanent;remember_me=30;;;
+```
 
 ## Template Syntax
 
+```html
+$parameterName              <!-- Parameter reference -->
+$param~='default';          <!-- With default value -->
+$templateabs_header_main    <!-- Embed header.main.template -->
+[:LANG_ID,default:]         <!-- Language translation -->
+##comment line              <!-- Removed in output -->
 ```
-$parameterName              # Parameter reference
-$param~='default'           # With default value
-$template_id                # Embed another template
-$templateabs_path_file      # Absolute path template, example $templateabs_content_404 embed content.404.template from templates directory
-<%FUNC%name=value%FUNC%>    # Callback function block
-[%func;p1=v1;p2=v2%]        # Short callback syntax
-[:LANG_ID,default:]         # Language ID translation
-##comment line              # Template comment (removed in generation step)
+
+### Callback Functions
+
+Short syntax `[%...%]`:
+```html
+<!-- Equality check - returns string -->
+[%funcjob=eqs;param=is_active;value=Y;true=active;false=inactive%]
+
+<!-- Equality check - returns template -->
+[%funcjob=eq;param=show_search;value=T;true=search.box;false=empty%]
+
+<!-- Case/switch -->
+[%funcjob=cases;param=status;ACTIVE=green;PENDING=yellow;else=gray%]
+
+<!-- Date functions -->
+[%funcjob=today%]
+[%funcjob=now%]
+[%funcjob=lastweek%]
+```
+
+Full syntax `<%FUNC%...%FUNC%>`:
+```html
+<%FUNC%
+_function_name=renderUserCard
+@name=$current_user_name
+role=admin
+%FUNC%>
+```
+
+### Common Template Patterns
+
+**Boolean display:**
+```html
+<span class="[%funcjob=eqs;param=prop_value;value=Y;true=text-success;false=text-danger%]">
+    [%funcjob=eqs;param=prop_value;value=Y;true=[:YES,Yes:];false=[:NO,No:]%]
+</span>
+```
+
+**Status with color coding:**
+```html
+<span class="text-[%funcjob=cases;param=status;ACTIVE=success;PENDING=warning;DELETED=danger;else=secondary%]">
+    $status
+</span>
+```
+
+**Form select with selected state:**
+```html
+<select name="status">
+    <option value="ACTIVE" [%funcjob=eqs;param=status;value=ACTIVE;true=selected;false=%]>Active</option>
+    <option value="INACTIVE" [%funcjob=eqs;param=status;value=INACTIVE;true=selected;false=%]>Inactive</option>
+</select>
+```
+
+**Date filter defaults:**
+```html
+<input type="text" name="date_from" value="$date_from~='[%funcjob=lastweek%]';">
+<input type="text" name="date_to" value="$date_to~='[%funcjob=today%]';">
+```
+
+## Callback Function Implementation
+
+```php
+function callback_default(array $LFuncParams = []): mixed {
+    $funcjob = Eisodos::$utils->safe_array_value($LFuncParams, 'funcjob');
+
+    // Equality check - returns string
+    if ($funcjob === 'eqs') {
+        if (Eisodos::$parameterHandler->eq(
+            Eisodos::$utils->safe_array_value($LFuncParams, 'param'),
+            Eisodos::$utils->safe_array_value($LFuncParams, 'value')
+        )) {
+            return Eisodos::$utils->safe_array_value($LFuncParams, 'true');
+        }
+        return Eisodos::$utils->safe_array_value($LFuncParams, 'false');
+    }
+
+    // Case/switch - returns string
+    if ($funcjob === 'cases') {
+        $paramValue = Eisodos::$parameterHandler->getParam(
+            Eisodos::$utils->safe_array_value($LFuncParams, 'param')
+        );
+        return Eisodos::$utils->safe_array_value(
+            $LFuncParams, $paramValue,
+            Eisodos::$utils->safe_array_value($LFuncParams, 'else')
+        );
+    }
+
+    return '';
+}
 ```
 
 ## Code Conventions
@@ -117,4 +251,7 @@ $templateabs_path_file      # Absolute path template, example $templateabs_conte
 - Parameter names are always lowercase internally
 - Config values support variable substitution: `$_applicationDir`, `$_applicationName`
 - Template files use `.template` extension
+- Template naming: `header.main.template` → `$templateabs_header_main`
 - Language files are key=value pairs with `#` comments
+- Always use `Eisodos::$utils->safe_array_value()` for array access
+- Use `neq('param', '')` for empty checks instead of direct comparison
