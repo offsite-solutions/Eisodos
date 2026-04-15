@@ -288,6 +288,8 @@
           Eisodos::$logger->debug('Language file was blocked for writing!');
         }
         fclose($file);
+      } else if (Eisodos::$parameterHandler->isOn('COLLECTLANGIDS')) {
+        Eisodos::$logger->debug('Language file is not written.');
       }
     }
     
