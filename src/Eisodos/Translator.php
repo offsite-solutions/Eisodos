@@ -288,8 +288,6 @@
           Eisodos::$logger->debug('Language file was blocked for writing!');
         }
         fclose($file);
-      } else {
-        Eisodos::$logger->debug('Language file is not written.');
       }
     }
     

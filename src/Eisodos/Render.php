@@ -511,7 +511,7 @@
     public function finishRaw(bool $saveSessionVariables_ = false, bool $handleLanguages_ = false): void {
       Eisodos::$parameterHandler->finish($saveSessionVariables_);
       
-      if ($handleLanguages_) {
+      if ($handleLanguages_ || Eisodos::$parameterHandler->isOn('COLLECTLANGIDSRAW')) {
         Eisodos::$translator->finish();
       }
       
