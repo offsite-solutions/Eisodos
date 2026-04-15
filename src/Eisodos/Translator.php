@@ -276,6 +276,7 @@
         && Eisodos::$parameterHandler->isOn('COLLECTLANGIDS')
         && $this->_languageIDsCRC !== crc32(print_r($this->_languageIDs, true))
       ) {
+        Eisodos::$logger->debug('Language file is ready to written');
         $file = fopen(Eisodos::$parameterHandler->getParam('LANGIDFILE'), 'wb');
         if (flock($file, LOCK_EX)) {
           ksort($this->_languageIDs);
