@@ -131,12 +131,10 @@
         Eisodos::$parameterHandler->setParam("DebugLevels", implode(',', $debugLevels), false, false, 'eisodos::logger');
       } else {
         /* if debuglevels is not a list, then generate a list of levels higher or equal then the added */
-        if ($debugLevels_==='') {
-          $debugLevels_='error'; // default level
-        }
+        $resolvedLevel = ($debugLevels_ !== '') ? $debugLevels_ : ($debugLevels[0] ?: 'error');
         $levels = 'trace,debug,info,notice,alert,warning,error,emergency,critical';
-        $this->debugLevels = explode(',', substr($levels, strpos($levels, $debugLevels_)));
-        Eisodos::$parameterHandler->setParam("DebugLevels", substr($levels, strpos($levels, $debugLevels_)), false, false, 'eisodos::logger');
+        $this->debugLevels = explode(',', substr($levels, strpos($levels, $resolvedLevel)));
+        Eisodos::$parameterHandler->setParam("DebugLevels", substr($levels, strpos($levels, $resolvedLevel)), false, false, 'eisodos::logger');
       }
     }
     

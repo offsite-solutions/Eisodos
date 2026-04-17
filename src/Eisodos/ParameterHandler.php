@@ -836,11 +836,16 @@
       $needConfig=!Eisodos::$parameterHandler->isOff('ErrorIncludeConfigToLog');
       foreach ($this->_params as $key => $value) {
         if ($needConfig || !str_contains($value['source'], ':config')) {
+          if (is_array($value['value'])) {
+            $valueToLog = implode(',', $value['value']);
+          } else {
+            $valueToLog = $value['value'];
+          }
           $st .=
             ($value['source'] === '' ? '' : '[' . $value['source'] . '] ') .
             ($value['flag'] === '' ? '' : '(' . $value['flag'] . ') ') .
             ($value['readonly'] ? '(ro) ' : '') .
-            $key . '=' . (strlen($value['value']) > 255 ? substr($value['value'], 0, 255) . '...' : $value['value']) .
+            $key . '=' . (strlen($valueToLog) > 255 ? substr($valueToLog, 0, 255) . '...' : $valueToLog) .
             "\n";
         }
       }
