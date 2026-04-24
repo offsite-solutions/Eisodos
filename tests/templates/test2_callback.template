@@ -14,7 +14,7 @@ Short form:
 
 Real parameter function callback:
 
-[%_function_name=eqs;_real_parameters=true;param=test2;value=Y;true=TRUE2;false=FALSE2%]
+<b>[%_function_name=eqs;_real_parameters=true;param=test2;value=Y;true=TRUE2;false=FALSE2%]</b>
 
 Multi line parameter support test:
 
@@ -53,7 +53,7 @@ param=test2
 true>>=<%FUNC%
 function=eqs
 param=test3
-value=T
+value=T [:valami,valami:]
 true>>>=test1	## must use three multiline character, because it is embedded
 two line - TRUE4
 <<<
