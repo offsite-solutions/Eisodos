@@ -233,7 +233,7 @@
           foreach ($extraMails as $row) {
             Eisodos::$mailer->sendMail(
               $row,
-              Eisodos::$applicationName . ' error',
+              Eisodos::$parameterHandler->getParam('ERRORMAILSUBJECT',Eisodos::$applicationName . ' error'),
               '<html lang="en"><meta content="text/html; charset=utf-8" http-equiv="Content-Type" /><body><pre>' . htmlspecialchars(
                 $errorString
               ) . '</pre></body></html>',
