@@ -7,12 +7,19 @@ on the `udSCGI` framework to the modern **Eisodos** framework
 pattern from past migrations is documented so that a future migration can be
 performed mechanically.
 
-The document is based on two real, completed udSCGI → Eisodos migrations:
+The document is based on six real, completed migrations — two pure
+udSCGI→Eisodos pairs and four udSCGI+Tholos→Eisodos+Tholos pairs (the
+Tholos pieces are out of scope for this guide; ignore them when reading
+those projects):
 
-| Legacy site (udSCGI) | Migrated site (Eisodos) |
-| --- | --- |
-| `/Users/baxi/Work/drp/` | `/Users/baxi/Work/drp-v2/sites/dev/drp/` |
-| `/Users/baxi/Work/greengo/frontend/3Development/portal-v3/` | `/Users/baxi/Work/greengo/frontend/3Development/portal-v5/` |
+| Legacy site | Migrated site | Notes |
+| --- | --- | --- |
+| `/Users/baxi/Work/drp/` | `/Users/baxi/Work/drp-v2/sites/dev/drp/` | Pure Eisodos (no Tholos). Reference for **Layout A** (§3.2). |
+| `/Users/baxi/Work/greengo/frontend/3Development/portal-v3/` | `/Users/baxi/Work/greengo/frontend/3Development/portal-v5/` | Pure Eisodos. Reference for split bootstrap idea (early form). |
+| `/Users/baxi/Work/greengo/backoffice/3Development/portal/` | `/Users/baxi/Work/greengo/backoffice/3Development/v5/` | Tholos-layered. Eisodos parts only — reference for **Layout B** (§3.2) and the four-file bootstrap (§4.3–4.5). |
+| `/Users/baxi/Work/greengo/partnerportal/3Development/portal/portal-v4/` | `/Users/baxi/Work/greengo/partnerportal/3Development/portal/portal-v5/` | Tholos-layered. Same bootstrap shape as greengo-bo; companion frontend. |
+| `/Users/baxi/Work/ldu/backoffice-svn/portal/` | `/Users/baxi/Work/ldu/backoffice/v2/` | Tholos-layered. App namespace `nop_bo`. |
+| `/Users/baxi/Work/duvenbeck_backoffice/portal/` | `/Users/baxi/Work/duvenbeck_v3/backoffice/` | Tholos→Tholos under the hood, but the Eisodos bootstrap was rewritten — useful reference for the four-file split applied to a non-greengo namespace. |
 
 Reference repositories used throughout:
 
@@ -26,10 +33,19 @@ Reference repositories used throughout:
 | Docker base images | `/Users/baxi/Work/_docker/{BasicApp,TholosApp,BaseImages,...}` |
 | Tholos framework (optional add-on) | `/Users/baxi/Work/_tholos`, `/Users/baxi/Work/_tholos_editor/Base`, `/Users/baxi/Work/_tholos_builder/Base` |
 
-> ⚠️ The `duvenbeck/3Development/frontend/trunk → duvenbeck_backoffice/portal`
-> migration is **Tholos→Tholos**, not udSCGI→Eisodos. Tholos lives at
-> `/Users/baxi/Work/_tholos/`. Use that example as a Tholos reference, not
-> as a udSCGI source pattern.
+> ⚠️ **Tholos out of scope.** Four of the reference projects ship Tholos
+> on top of Eisodos. This guide deliberately documents only the Eisodos
+> pieces (bootstrap, config, parameter handling, DB, callbacks, helper
+> endpoints). When reading those projects, **skip** everything Tholos:
+> `tholos/`, `_tholos_*.php`, `tholos.conf` includes, `_run.php`
+> (Tholos dispatcher), the `Tholos\Tholos` / `Tholos\TCustomModule` /
+> `Tholos\TComponent` use-statements, and any class extending
+> `TCustomModule`. The patterns this guide extracts (four-file
+> bootstrap, `_autoload.php`, `_init_parameters.php`, `ls_client.php`,
+> the file-handler split, `composer.dev.json` workflow) are pure-Eisodos
+> patterns that happen to be in use inside those Tholos-layered apps.
+> §22 sketches how to add Tholos *afterwards*, once the bare Eisodos
+> migration is complete.
 
 ---
 
@@ -318,28 +334,88 @@ follow-up.
 
 #### Development with linked sources
 
-During local development the per-app composer.json typically points at
-the source checkouts via `x-repositories` (drp-v2 style) so live edits
-to `_eisodos/Base`, `_eisodos/Connectors/*`, `_eisodos/SQLParser` are
-picked up immediately:
+Two patterns are in use. Pick one and stay consistent across the app:
+
+**Pattern A — single `composer.json` with `x-repositories` (drp-v2 style).**
+Keeps everything in one file; rename `x-repositories` → `repositories`
+locally when you need the path repos. Composer ignores `x-`-prefixed keys.
 
 ```json
 "x-repositories": [
-  { "type": "path", "url": "/Users/baxi/Work/_eisodos/Base",                "options": { "symlink": true } },
-  { "type": "path", "url": "/Users/baxi/Work/_eisodos/Connectors/MDB2",     "options": { "symlink": true } },
-  { "type": "path", "url": "/Users/baxi/Work/_eisodos/SQLParser",           "options": { "symlink": true } }
+  { "type": "path", "url": "/Users/baxi/Work/_eisodos/Base",            "options": { "symlink": true } },
+  { "type": "path", "url": "/Users/baxi/Work/_eisodos/Connectors/MDB2", "options": { "symlink": true } },
+  { "type": "path", "url": "/Users/baxi/Work/_eisodos/SQLParser",       "options": { "symlink": true } }
 ]
 ```
 
-(The `x-` prefix means Composer ignores it; bring it in by renaming to
-`repositories` before `composer install` when you need the path repos.)
+**Pattern B — parallel `composer.json` + `composer.dev.json` (greengo / ldu /
+duvenbeck style).** Ship two manifests side by side. Prod uses
+`composer.json` (no path repos, version pins, `--no-dev`). Dev uses
+`composer.dev.json` with real `repositories` pointing at a Docker-mounted
+symlink target like `/opt/local-dev/composer/...`. Switch by setting the
+`COMPOSER` env var.
+
+`composer.dev.json` (greengo backoffice — Docker-mounted symlinks):
+
+```json
+{
+  "repositories": [
+    { "type": "path", "url": "/opt/local-dev/composer/eisodos/Base",              "options": { "symlink": true } },
+    { "type": "path", "url": "/opt/local-dev/composer/eisodos/SQLParser",         "options": { "symlink": true } },
+    { "type": "path", "url": "/opt/local-dev/composer/eisodos/Connectors/Oracle", "options": { "symlink": true } }
+  ],
+  "require": {
+    "php": "^8.4",
+    "offsite-solutions/eisodos": "@dev",
+    "offsite-solutions/eisodos-db-connector-oci8": "@dev",
+    "ext-simplexml": "*", "ext-curl": "*", "ext-zip": "*"
+  },
+  "config": { "vendor-dir": "./vendor" }
+}
+```
+
+Ship two thin wrapper scripts at the repo root so devs don't have to
+remember the flags:
+
+`composer_update.sh` (prod):
+
+```bash
+if [ ! -d "./vendor/composer" ]; then
+  /usr/bin/composer install --no-interaction --prefer-dist --no-dev --no-ansi --optimize-autoloader
+else
+  /usr/bin/composer update  --no-interaction --prefer-dist --no-dev --no-ansi --no-cache --optimize-autoloader
+fi
+```
+
+`composer_update_dev.sh` (dev — `COMPOSER=` env var tells Composer which
+manifest to read):
+
+```bash
+COMPOSER=composer.dev.json composer update --no-interaction --prefer-dist --no-dev --no-ansi --no-cache --optimize-autoloader
+```
+
+The Docker runtime mounts the host's `/Users/.../_eisodos` into
+`/opt/local-dev/composer/eisodos` inside the container (see
+`/Users/baxi/Work/_docker_images/applications/<app>/run.sh`), so framework
+edits on the host are picked up live by the dev composer flow. Pattern B
+is the default for every greengo / ldu / duvenbeck migration; Pattern A is
+appropriate for smaller, single-developer apps like drp-v2.
+
+> **PHP version floor.** Every recent migration pins `"php": "^8.4"`. The
+> framework itself uses readonly properties, typed `: mixed` returns, and
+> `str_starts_with()` — do **not** target an older PHP minor.
 
 ### 3.2 Recommended filesystem layout
+
+Two layouts are in active use. Use **Layout A** for new pure-Eisodos apps
+and small projects; use **Layout B** for anything that ships a Docker
+image or has multiple entry-point scripts (greengo, ldu, duvenbeck).
+
+#### Layout A — flat (drp-v2 style)
 
 ```
 <appname>/
 ├── _init.php           # framework bootstrap (was: udSCGI's "new udSCGI(...)")
-├── __eisodos.php       # OPTIONAL: split bootstrap (greengo-v5 style) — pure framework wiring
 ├── _callbacks.php      # callback_default() definition
 ├── index.php           # page entry points (one per .php)
 ├── ...                 # cms.php, cms_reg.php, getAPIResult.php, ajax.php, ...
@@ -348,9 +424,8 @@ picked up immediately:
 ├── config/
 │   ├── environment                  # one line: dev | local | test | live
 │   ├── <env>-<appname>.conf         # e.g. dev-drp.conf  (entry config)
-│   ├── common_pre_<env>.conf        # shared per-env defaults (PreInclude'd)
+│   ├── common_pre_<env>.conf        # OPTIONAL local copy; Eisodos ships one (see §5.1)
 │   ├── global.conf                  # OPTIONAL shared org-wide defaults
-│   ├── i18n.conf, tholos.conf, ...  # OPTIONAL modular config slices
 │   ├── version.conf                 # PostInclude'd, generated at deploy
 │   ├── <appname>.params             # parameter filter (same syntax as udSCGI)
 ├── templates/          # *.template — syntax unchanged
@@ -358,9 +433,62 @@ picked up immediately:
 └── logs/               # generated at runtime
 ```
 
-The directory layout, environment switch (`config/environment`) and
-`.params` file format are **unchanged** from udSCGI — only the framework
-that reads them has been replaced.
+#### Layout B — `src/`-based (greengo / ldu / duvenbeck style)
+
+```
+<appname>/
+├── composer.json              # production manifest (pinned, no dev deps)
+├── composer.dev.json          # dev manifest with path repos (see §3.1 Pattern B)
+├── composer.lock
+├── composer_update.sh         # prod composer wrapper
+├── composer_update_dev.sh     # dev composer wrapper
+├── vendor/                    # populated by composer
+├── src/                       # all PHP entry points + bootstrap
+│   ├── __eisodos.php          # framework-only bootstrap (no app logic)
+│   ├── _init.php              # app bootstrap: requires __eisodos.php, _autoload.php, _init_parameters.php
+│   ├── _autoload.php          # SPL autoloader for the app namespace (e.g. `greengo\`)
+│   ├── _init_parameters.php   # app-specific parameter derivation (LANG → DateFormat / JSDateFormat / ...)
+│   ├── _callbacks.php         # callback_default() — uses Eisodos::$utils->safe_array_value()
+│   ├── index.php              # typically a one-line redirect to /DASHBOARD/index/ etc.
+│   ├── ls_client.php          # OPTIONAL: LangServer (translation server) client (§14.4)
+│   ├── bo_fileHandler.php     # OPTIONAL: file ingestion / serving endpoint (§14.5)
+│   ├── fe_fileHandler.php     # OPTIONAL: frontend → backoffice file proxy (§14.5)
+│   ├── bo_mailSender.php      # OPTIONAL: mail dispatcher (§14.6)
+│   ├── bo_printDocument.php   # OPTIONAL: print template renderer
+│   ├── bo_pushGateway.php     # OPTIONAL: outbound JSON push
+│   ├── <DomainModule>.php     # one file per business module (namespace `<appname>`)
+│   └── assets/
+│       ├── templates/         # *.template — Eisodos template syntax
+│       ├── css/  js/  img/  sound/  fonts/  config/
+├── i18n/                      # generated.txt / translated.txt / langids.txt — managed by ls_client
+├── legacy/                    # OPTIONAL placeholder for not-yet-converted legacy code
+├── CLAUDE.md                  # OPTIONAL team/agent guidance (greengo-bo ships one)
+└── config/                    # see "Config externalization" below
+```
+
+**The `config/` directory may or may not live inside the repo.** Every
+greengo / ldu / duvenbeck migration **externalizes config**: it is not
+checked in here, but mounted at runtime from
+`/Users/baxi/Work/_docker_images/applications/<app>/config/config/` into
+the container at `/etc/app/config` (with `EISODOS_CONFIG_PATH=/etc/app/config`).
+drp-v2 checks it in. Both are valid; decide based on whether the app
+ships as a Docker image with environment-specific overrides.
+
+The environment switch (`config/environment`) and `.params` file format
+are **unchanged** from udSCGI — only the framework that reads them has
+been replaced. Likewise `.template` and `.lang` file syntax.
+
+**Naming and conventions observed across all four recent migrations:**
+
+| File / dir | Convention |
+| --- | --- |
+| `__eisodos.php` | Two leading underscores. Framework wiring only — never app logic. |
+| `_init.php` | One underscore. Includes `__eisodos.php`, `_autoload.php`, `_init_parameters.php` in that order. |
+| `_autoload.php` | Declares `namespace <appname>` and registers an SPL loader (see §4.6). |
+| `_init_parameters.php` | Pure `Eisodos::$parameterHandler->setParam(...)` — no logic beyond derivations (see §4.7). |
+| `_callbacks.php` | Body uses `Eisodos::$utils->safe_array_value($LFuncParams, 'funcjob') === '...'` for every branch. |
+| Domain module class | One file per class, `namespace <appname>;`, classname = filename without `.php`. |
+| Indentation | 2 spaces in PHP files. Don't reformat to 4. |
 
 ---
 
@@ -464,35 +592,54 @@ explicitly):
   }
 ```
 
-### 4.3 Eisodos bootstrap — split variant (greengo-v5)
+### 4.3 Eisodos bootstrap — split variant (greengo-v5 / ldu / duvenbeck)
 
-For larger apps split the bootstrap so that pure framework wiring is
-isolated from application logic. greengo-v5
-(`/Users/baxi/Work/greengo/.../portal-v5/hu/`) has:
+For any app with more than one entry-point file, split the bootstrap.
+**Every recent migration uses the same four-file shape** under `src/`:
 
-#### `__eisodos.php` (framework-only)
+```
+src/__eisodos.php        ← framework wiring only (Eisodos init + connector register)
+src/_init.php            ← top-level glue: requires the three files below in order
+src/_autoload.php        ← SPL autoloader for the app namespace
+src/_init_parameters.php ← LANG → derived parameters (DateFormat, JSDateFormat, …)
+```
+
+Page / API / CLI entry-points then start with one line:
+
+```php
+require_once(__DIR__ . '/__eisodos.php');   // framework only — minimal bootstrap (CLI helpers, ls_client)
+// — OR —
+include __DIR__ . '/_init.php';             // full bootstrap (HTML pages, business endpoints)
+```
+
+#### `__eisodos.php` (framework wiring — never app logic)
+
+Canonical body, copy verbatim and change only the application name and
+the connector class:
 
 ```php
 <?php
   use Eisodos\Eisodos;
+  use Eisodos\Connectors\ConnectorOCI8;            // or ConnectorPDOPgSQL / ConnectorPDOSQLSrv / ConnectorMDB2
   use Eisodos\Parsers\CallbackFunctionParser;
   use Eisodos\Parsers\CallbackFunctionShortParser;
 
-  require_once '../vendor/autoload.php';
+  require_once '../vendor/autoload.php';           // src/ → ../vendor — keep relative!
 
   try {
-    Eisodos::getInstance()->init([__DIR__, 'greengo_fe_hu']);
+    Eisodos::getInstance()->init([__DIR__, 'greengo_bo']);   // 2nd arg = config-file prefix, not the directory
 
     Eisodos::$render->start(
       ['configType' => Eisodos::$configLoader::CONFIG_TYPE_INI],
       [], [],
-      ''                  // empty = use config-driven log level
+      ''                                          // '' = use DEBUGLEVELS from config
     );
 
-    Eisodos::$templateEngine->registerParser(new CallbackFunctionParser());
-    Eisodos::$templateEngine->registerParser(new CallbackFunctionShortParser());
     require_once(__DIR__ . '/_callbacks.php');
     Eisodos::$templateEngine->setDefaultCallbackFunction('callback_default');
+
+    Eisodos::$dbConnectors->registerDBConnector(new ConnectorOCI8());
+    // NOTE: do NOT call ->connect() here — see §7.1 "Lazy connection"
   } catch (Exception $e) {
     if (!isset(Eisodos::$logger)) { die($e->getMessage()); }
     Eisodos::$logger->writeErrorLog($e);
@@ -500,49 +647,181 @@ isolated from application logic. greengo-v5
   }
 ```
 
-#### `_init.php` (app logic)
+> **Parser registration.** Whether you call
+> `registerParser(new CallbackFunctionParser())` /
+> `CallbackFunctionShortParser()` in `__eisodos.php` depends on which
+> template tags you use. **Register them unless something downstream
+> (e.g. a layered framework) registers them for you.** drp-v2 / greengo
+> frontend register them explicitly; greengo-backoffice / ldu omit them
+> because their layered runtime registers them later. If templates render
+> with `<%FUNC%...%FUNC%>` or `[%...%]` showing through verbatim, you
+> forgot a parser.
+
+> **`init([$dir, $name])` — name is decoupled from the directory.** Both
+> partnerportal (`portal-v5/src/`) and the duvenbeck v3 backoffice use
+> the application name `'greengo_pp'` despite living in different
+> top-level directories. The name only drives config file prefixes
+> (`{env}-greengo_pp.conf`, log paths, `$_applicationname`). It can be
+> arbitrary; pick it to match the deployed config-file naming, not the
+> repo path.
+
+#### `_init.php` (chain the three pieces — keep tiny)
+
+```php
+<?php
+  require_once __DIR__ . '/__eisodos.php';
+  require_once('_autoload.php');
+  require_once('_init_parameters.php');
+```
+
+That is the *entire* file in greengo-bo, ldu-bo, partnerportal-v5 and
+duvenbeck-v3. Any per-app glue (extra `require_once`, conditional
+language fixups, custom session handlers) goes **here**, never in
+`__eisodos.php`.
+
+#### When to skip `_init.php` and require `__eisodos.php` directly
+
+Helper endpoints that don't need the autoloader or derived parameters —
+for example `ls_client.php`, `bo_mailSender.php`, `bo_pushGateway.php` —
+include only `__eisodos.php`. This avoids paying for namespace class
+loading and language-format computation on requests that never touch
+either. Use the full `_init.php` for HTML pages, the `_run.php`-style
+dispatchers, and any request that loads app-namespaced classes.
+
+### 4.4 The `_autoload.php` SPL autoloader
+
+Every `src/`-layout migration drops Composer PSR-4 in favor of a tiny
+hand-rolled SPL loader. The shape is identical across all four
+migrations — only the `namespace` line changes:
+
+```php
+<?php
+  namespace greengo;     // duvenbeck_bo, nop_bo, partnerportal — pick your app namespace
+
+  spl_autoload_register(function ($class) {
+    if (str_starts_with($class, __NAMESPACE__)) {
+      require_once(__DIR__ . DIRECTORY_SEPARATOR . explode('\\', $class)[1] . '.php');
+    }
+  });
+```
+
+Resolution: `greengo\COR_LOGIN` → `src/COR_LOGIN.php`. The loader is
+**flat by design** — it only looks at the second namespace segment, so
+all classes live directly in `src/`, one file per class. Subnamespaces
+(`greengo\foo\Bar`) are silently ignored; if you need them, switch to
+Composer PSR-4 in `composer.json` instead of extending the loader.
+
+Top-level entry-point scripts (`index.php`, `bo_fileHandler.php`,
+`bo_mailSender.php`, `ls_client.php`, `_run.php`) are **not**
+namespaced — they are URL targets, not autoloaded classes.
+
+### 4.5 The `_init_parameters.php` LANG-derived parameters
+
+Every Hungarian/multi-lingual migration uses `LANG` to select per-locale
+date/time format strings. Each format family is defined in config as
+`HU.DATEFORMAT=Y-m-d`, `EN.DATEFORMAT=Y-m-d`, etc., and the bootstrap
+copies the locale-specific value into the unsuffixed parameter the
+templates and PHP code actually read (`DateFormat`,
+`PHPDateTimeFormat`, …). The canonical file body:
 
 ```php
 <?php
   use Eisodos\Eisodos;
-  require_once __DIR__ . '/__eisodos.php';
-  require_once(__DIR__ . "/getAPIResult.php");
 
+  # set LANG to uppercase — config keys are uppercase
   if (Eisodos::$parameterHandler->neq("LANG", "")) {
-    Eisodos::$parameterHandler->setParam("LANG", strtoupper(Eisodos::$parameterHandler->getParam('LANG')), true);
+    Eisodos::$parameterHandler->setParam(
+      "LANG",
+      strtoupper(Eisodos::$parameterHandler->getParam('LANG')),
+      true                                  // session-persistent
+    );
   }
-  if (Eisodos::$parameterHandler->neq("LANG", "HU") && Eisodos::$parameterHandler->neq("LANG", "EN")) {
-    Eisodos::$parameterHandler->setParam("LANG", "HU", true);
+
+  # three families × four widths = 12 derived params
+  foreach (['', 'JS', 'PHP'] as $family) {
+    foreach (['DateFormat', 'DateTimeFormat', 'DateTimeHMFormat', 'TimeFormat'] as $kind) {
+      $configKey = Eisodos::$parameterHandler->getParam("LANG") . '.' . strtoupper($family . $kind);
+      Eisodos::$parameterHandler->setParam(
+        $family . $kind,
+        Eisodos::$parameterHandler->getParam($configKey)
+      );
+    }
   }
-  /* ... navigation routing, doSessionStart, doCheckParticipantID etc. ... */
+
+  Eisodos::$parameterHandler->setParam("LANG_SMALL", strtolower(Eisodos::$parameterHandler->getParam("LANG")));
 ```
+
+In the actual migrated files the loop is expanded out to twelve explicit
+`setParam` calls (see
+`/Users/baxi/Work/greengo/backoffice/3Development/v5/src/_init_parameters.php`
+for the verbatim form). Either form is fine; pick what matches the rest
+of the codebase.
+
+The required config entries — put them in `global.conf` or a dedicated
+`i18n.conf` PreInclude:
+
+```ini
+HU.DATEFORMAT=Y-m-d
+HU.DATETIMEFORMAT=Y-m-d H:i:s
+HU.DATETIMEHMFORMAT=Y-m-d H:i
+HU.TIMEFORMAT=H:i:s
+HU.JSDATEFORMAT=YYYY-MM-DD
+HU.JSDATETIMEFORMAT=YYYY-MM-DD HH:mm:ss
+HU.JSDATETIMEHMFORMAT=YYYY-MM-DD HH:mm
+HU.JSTIMEFORMAT=HH:mm:ss
+HU.PHPDATEFORMAT=Y-m-d
+HU.PHPDATETIMEFORMAT=Y-m-d H:i:s
+HU.PHPDATETIMEHMFORMAT=Y-m-d H:i
+HU.PHPTIMEFORMAT=H:i:s
+# repeat for each language in `Langs=`
+```
+
+**Skip this file** only if the app is single-language and never uses
+`$DateFormat` / `$JSDateFormat` / `$PHPDateFormat` in templates — verify
+with `grep -RIn '\$\(JS\|PHP\)\?Date' src/assets/templates/`.
 
 Use the split pattern when:
 
 - More than one entry-point file shares the same bootstrap.
 - You want to write framework-level tests (`__eisodos.php` is then
   reusable).
-- You want to keep `_init.php` small enough to read.
+- You want to keep each piece small enough to read.
 
-### 4.4 Sessions
+### 4.6 Sessions
 
 `udSCGI` always called `session_start()` from its constructor's
 `_loadSessionVariables()` after applying `COOKIE_DOMAIN`,
 `COOKIE_PATH`, `COOKIE_SECURE`, `COOKIE_HTTPONLY`, `COOKIE_SAMESITE`
 from `[Config]`. Eisodos still respects all those keys and computes
-`getCookieParams()` the same way, **but you may need to start the
-session yourself** because some apps require it before
-`Render::start()` runs (e.g. when `.params` declares `session;NAME`
-rules that get applied during `start()`).
+`getCookieParams()` the same way.
 
-drp-v2 calls `session_start()` at the very top of `_init.php`. greengo
-relies on `Render::start()` doing the right thing because its
-`__eisodos.php` doesn't precede it with any session-aware logic.
+**Three concrete migration strategies, all valid:**
 
-**Rule of thumb**: if `.params` contains any `session;…` line, call
-`session_start()` yourself with the cookie params your config defines.
+1. **Don't touch it** — let `Render::start()` start the session itself.
+   `__eisodos.php` for greengo-backoffice, greengo-partnerportal,
+   ldu-backoffice, and duvenbeck-v3-backoffice all do this. Their
+   `.params` files contain `session;LANG` and other `session;*` rules
+   and still work, so `Render::start()` is starting the session in time
+   for the parameter merge. **This is the recommended default.**
 
-### 4.5 `__construct` parameters → equivalent Eisodos config / options
+2. **Call `session_start()` at the very top of `_init.php`** —
+   drp-v2 does this. Use only if you have application code that
+   already needs `$_SESSION` populated *before* `Render::start()`
+   completes (rare; usually only when you've pre-wired a non-standard
+   session save handler).
+
+3. **Register a custom session save handler before `Render::start()`** —
+   for Redis-backed sessions or DB-backed sessions. Replaces the
+   `$useDBSession_` constructor flag from udSCGI. Do
+   `session_set_save_handler(...)` in `__eisodos.php` *before* the
+   `Render::start()` call.
+
+Earlier guidance ("call `session_start()` yourself when `.params`
+declares `session;NAME` rules") turned out to be overcautious — the
+four recent migrations show it isn't required for normal cookie-backed
+sessions.
+
+### 4.7 `__construct` parameters → equivalent Eisodos config / options
 
 | udSCGI constructor argument | Eisodos equivalent |
 | --- | --- |
@@ -803,6 +1082,43 @@ session;CMS*
 session;DEBUGMODE
 ```
 
+**Canonical skeleton across greengo / ldu / duvenbeck.** All four recent
+migrations ship a nearly identical `.params` file. Use this as the
+copy-paste starting point for any new multi-lingual app; adjust the
+language regex and drop `session;CMS*` / `session;DEBUGMODE` if you
+don't have those URL prefixes:
+
+```
+exclude;SESSIONID
+exclude;EMPTY
+exclude;CGI
+exclude;MAINADDRESS
+exclude;LASTACTIVE
+exclude;RELOAD
+exclude;CRC
+exclude;NOSESSION
+exclude;RURL
+exclude;USID
+exclude;ALLOWADMIN
+exclude;LANGIDFILE                                # important: keep — prevents log-path override
+session;LANG
+cookie;EDITOR
+encoded;CSID
+encoded;REDIRECT
+cookie;LANGEDIT
+cookie;DEVVERSION
+session;SESSION_*                                 # wildcard — captures every SESSION_<X> param
+input;P_LANGUAGE;/^(HU|EN|CZ)$/i;HU;Nyelvhiba    # validate incoming language switcher
+session;LANG;/^(HU|EN|CZ)$/i;HU;Nyelvhiba        # validate stored language too
+```
+
+The validation lines use the V2 form
+`<scope>;<NAME>;<regex>;<default>;<error_msg>`. When the regex does not
+match, the parameter is replaced with `<default>` and `<error_msg>` is
+either logged (any text) or used as a redirect target (if it starts
+with `/` or `http`). The Hungarian word `Nyelvhiba` ("language error")
+is logged on mismatch.
+
 #### V1 (legacy, still parsed; recognise it in old configs)
 
 A one-char prefix on the parameter name:
@@ -905,6 +1221,29 @@ Eisodos::$dbConnectors->connector()->connect();          // reads [Database]
 `connector()` without arguments returns the connector registered at
 index 0. `connector($n)` returns the one at index `$n`. You can also use
 the alias `Eisodos::$dbConnectors->db()` (same as `connector(0)`).
+
+#### Eager vs lazy connection
+
+**Lazy is the default for greengo / ldu / duvenbeck.** Their
+`__eisodos.php` only registers the connector and never calls
+`->connect()`. The first `connector()->query(...)` (or the first
+`<%SQL%>` template parse) opens the connection. Skipping eager connect
+is what lets helper endpoints (`ls_client.php`, `bo_pushGateway.php`,
+`bo_printDocument.php` for static templates) start without ever opening
+a DB session — measurable on Oracle/OCI8 where login is slow.
+
+**Eager connect (drp-v2 style)** — `->connect()` immediately after
+`registerDBConnector(...)` — is appropriate when:
+
+- Every request hits the DB and you'd rather fail fast on a misconfigured
+  `[Database]` section than at the first query.
+- You need the connection alive before another piece of bootstrap runs
+  (e.g. a session save handler that reads from DB).
+- You're emitting `connectSQL` (Oracle session-level `ALTER SESSION SET
+  NLS_DATE_FORMAT=...`) that subsequent code assumes is in effect.
+
+If you choose lazy and a bootstrap-time error reveals that you needed
+eager, add the `->connect()` line — it's a one-line change.
 
 #### Per-connector configuration sections
 
@@ -1149,21 +1488,43 @@ output. This is the intended behaviour — pay only for what you use.
 function callback_default($c, $LFuncParams = []) { ... }
 ```
 
-Eisodos callback signature:
+Eisodos callback signature — two valid shapes in the wild:
 
 ```php
+// drp-v2 style (matches engine interface verbatim, two args):
 function callback_default(array $LFuncParams = [], string $parameterPrefix_ = '') { ... }
+
+// greengo / ldu / duvenbeck style (one-arg, explicit `: mixed` return):
+function callback_default(array $LFuncParams = []): mixed { ... }
 ```
 
+Both work — the engine passes a second argument but PHP ignores it when
+the function signature only declares one. **Prefer the second form for
+new callbacks**: it makes the return type explicit and matches what every
+recent migration emits. Keep the two-arg form only if your callback
+actually inspects `$parameterPrefix_` (the value passed via
+`_parameter_prefix=` in `<%FUNC%...%FUNC%>` blocks — rare in practice).
+
 The `$c` first-argument is gone — use the `Eisodos::$...` facades inside
-the function instead. The second argument `$parameterPrefix_` is the
-value passed via `_parameter_prefix=` in `<%FUNC%...%FUNC%>` blocks.
+the function instead.
 
 Register the function once:
 
 ```php
 Eisodos::$templateEngine->setDefaultCallbackFunction('callback_default');
 ```
+
+**Always wrap key access in `Eisodos::$utils->safe_array_value()`.** The
+direct-bracket access `$LFuncParams['funcjob']` will emit a PHP 8 warning
+on every template tag that omits a key. The recent migrations
+universally do:
+
+```php
+if (Eisodos::$utils->safe_array_value($LFuncParams, 'funcjob') === 'eq') { ... }
+```
+
+This both silences the warning and lets the callback degrade to the
+fallthrough `return '';` instead of bombing on malformed templates.
 
 ### 8.4 Real callback rewrite
 
@@ -1210,6 +1571,7 @@ following table as a reference when rewriting a `_callbacks.php`:
 | --- | --- | --- |
 | `eqs` | If `param == value` return `true` string, else `false` string. | See callback skeleton in §8.4 (returns scalar). |
 | `eq` | Like `eqs` but `true`/`false` are template IDs to expand. | See §8.4. |
+| `case` | Like `cases` but the matched value is a template ID to expand. | greengo / ldu callbacks both ship this. |
 | `cases` | switch/case on `param` value; returns `<value>=<retval>;...;else=<fallback>` mapping. | `safe_array_value($params, $paramValue, safe_array_value($params, 'else'))`. |
 | `tempbyparam` / `getparambyname` | Indirection: return the template named by the value of `paramname`, or return the value of the parameter named by `paramname`. | See greengo `_callbacks.php`. |
 | `nl2br` | `nl2br($param)` | trivial. |
@@ -1218,6 +1580,54 @@ following table as a reference when rewriting a `_callbacks.php`:
 | `funct` / `cmsfunct` / `regfunct` | Conditional template expansion with multi-condition support and `paramset`. | greengo-specific; preserve the conditions/template/return semantics. |
 | `userfunc` | (auto-injected for `[#...#]`) — user-defined fallback. | Implement whatever the legacy code did under `userfunc`. |
 | `isadmin` / `isadmint` | Role checks; return scalar / template. | trivially port from legacy. |
+
+**Date/time helpers — almost every greengo / ldu / duvenbeck `_callbacks.php`
+ships this exact set.** Copy-paste skeleton (returns formatted date
+strings; the format is driven by the LANG-derived `DateFormat` /
+`DateTimeFormat` parameters from §4.5):
+
+| `funcjob=` | Returns |
+| --- | --- |
+| `today` | `date($DateFormat)` |
+| `today0` | `date($DateFormat) . ' 00:00:00'` |
+| `todayhm` | `date($DateTimeHMFormat)` (today + current hour:minute) |
+| `now` | `date($DateTimeFormat)` |
+| `nowhm` | `date($DateTimeHMFormat)` |
+| `lasthour` | one hour ago, `$DateTimeFormat` |
+| `lasthourhm` | one hour ago, `$DateTimeHMFormat` |
+| `lastweek` | seven days ago, `$DateFormat` |
+| `lastweek0` | seven days ago + `' 00:00:00'` |
+| `lastyear` | one year ago, `$DateFormat` |
+| `currentmonth` | first day of current month, `$DateFormat` |
+| `0day` | literal `'1900-01-01'` (sentinel "no date") |
+| `ymd` | `date('Ymd')` (raw, format-independent) |
+| `ymdhis` | `date('YmdHis')` |
+
+**Other recurring helpers across the four migrations:**
+
+| `funcjob=` | Behaviour |
+| --- | --- |
+| `ishtml` | `preg_match('/<[^>]+>/', $param)` — returns 'T'/'F' string. |
+| `userhelp_convert` | Markdown-ish: convert `((ID))` into `<a href="#ID">…</a>` internal links and substitute `((version))` with the app version. |
+| `stars` | Render a Font Awesome 5-star rating row driven by an integer param value. |
+
+Mechanical rewrites you'll always apply inside the callback body:
+
+- `$c->getParam` → `Eisodos::$parameterHandler->getParam`
+- `$c->addParam` → `Eisodos::$parameterHandler->setParam`
+- `$c->eq` / `$c->neq` → `Eisodos::$parameterHandler->eq` / `neq`
+- `$c->getTemplate` → `Eisodos::$templateEngine->getTemplate`
+- `$c->getMultiTemplate` → `Eisodos::$templateEngine->getMultiTemplate`
+- `$c->addToResponse` → `Eisodos::$templateEngine->addToResponse`
+- `sa($a, 'k', 'd')` → `Eisodos::$utils->safe_array_value($a, 'k', 'd')`
+- `D_replace` → `Eisodos::$utils->replace_all` (or `str_replace`)
+- `D_pos($needle, $haystack) == 1` → `strpos($haystack, $needle) === 0`
+- `D_copy($s, $start, $len)` → `substr($s, $start - 1, $len)` (1-indexed!)
+- `D_isint` → `Eisodos::$utils->isInteger`
+- `PC::debug` → `Eisodos::$logger->debug`
+
+Read every `$LFuncParams[...]` through `Eisodos::$utils->safe_array_value`
+so missing keys don't trigger PHP 8 warnings (see §8.3).
 
 Mechanical rewrites you'll always apply inside the callback body:
 
@@ -1583,6 +1993,222 @@ Cron scripts should typically:
 - Read parameters from `argv` (replace any `_GET/_POST` reading with a
   small CLI parser, then `Eisodos::$parameterHandler->setParam(...)`).
 
+### 14.4 LangServer client (`ls_client.php`)
+
+Every greengo / ldu / duvenbeck migration ships an `ls_client.php`
+endpoint that exchanges translation data with an external LangServer
+service. It bootstraps the framework only (`__eisodos.php`, not
+`_init.php` — autoload and date params are not needed) and dispatches
+on a `LS_ACTION` parameter. Skeleton:
+
+```php
+<?php
+  use Eisodos\Eisodos;
+  require_once __DIR__ . "/__eisodos.php";
+
+  function post_data(array $data): string {
+    $opts = ['http' => [
+      'header'  => "Content-type: application/x-www-form-urlencoded\r\n"
+                 . "Accept-Encoding: gzip,deflate,sdch\r\n"
+                 . "Accept-Charset:UTF-8,*;q=0.5\r\n",
+      'method'  => 'POST',
+      'content' => http_build_query(
+        array_merge($data,
+          ['ls_auth_key' => Eisodos::$parameterHandler->getParam('LangServerAuthKey')]),
+        '', '&', PHP_QUERY_RFC3986)
+    ]];
+    $content = file_get_contents(
+      Eisodos::$parameterHandler->getParam('LangServerURL'),
+      false,
+      stream_context_create($opts)
+    );
+    if ($content === false) { throw new RuntimeException('Response error!'); }
+    foreach ($http_response_header as $h) {
+      if (stripos($h, 'content-encoding') !== false && stripos($h, 'gzip') !== false) {
+        $content = gzinflate(substr($content, 10, -8));
+      }
+    }
+    return $content;
+  }
+
+  // 1. auth — only `request` is unauthenticated; everything else requires the key
+  if (Eisodos::$parameterHandler->neq('LS_ACTION', 'request')
+      && Eisodos::$parameterHandler->getParam('LangServerAuthKey', '*')
+         != Eisodos::$parameterHandler->getParam('LS_AUTH_KEY', '#')) {
+    http_response_code(403);
+    Eisodos::$templateEngine->addToResponse('Unauthorized request');
+    Eisodos::$render->finishRaw(false);
+    exit;
+  }
+
+  // 2. dispatch — supported actions: keys | tags | defaults | status | push | request
+  if (Eisodos::$parameterHandler->eq('LS_ACTION', 'keys')) {
+    header('Content-type: application/json');
+    Eisodos::$templateEngine->addToResponse(
+      json_encode(Eisodos::$translator->getLanguageIDs(), JSON_THROW_ON_ERROR));
+    Eisodos::$render->finish();
+    exit;
+  }
+  // ... `tags` → translator->userLanguageIDs ...
+  // ... `defaults` → Translator::getLangTextForTranslate($key, "#", false) per key ...
+  // ... `status` → file_get_contents(USERLANGIDFILE . '.status') ...
+  // ... `push` → file_put_contents(USERLANGIDFILE, payload) + status JSON sibling ...
+  // ... `request` → post_data(...) to the language server ...
+```
+
+Required config (typically in `global.conf`):
+
+```ini
+LangServerURL=https://langserver.internal/api
+LangServerAuthKey=<shared-secret>
+UserLangIDFile=/app/dist/i18n/user_langids.txt
+```
+
+The endpoint **must finish with `Eisodos::$render->finish()` or
+`finishRaw(false)`** for each branch; otherwise the global output buffer
+flushes whatever was already accumulated, which corrupts the JSON
+response. Always include the `exit` after `finish()` — multiple
+branches fall through otherwise.
+
+### 14.5 File handler split: `bo_fileHandler.php` + `fe_fileHandler.php`
+
+The recurring pattern for file ingestion (used by greengo, ldu,
+duvenbeck) is a **two-endpoint split**:
+
+- **`bo_fileHandler.php`** — server-side. Accepts a richly-parameterised
+  set of file operations (`SourceType` ∈ FILE/STDIN/PARAMETER/URL/OBJECT/FILELIST/OBJECTS,
+  `TargetType` ∈ FILE/OBJECT, `FileOperation` ∈ create/read/move/copy/delete/append/zip).
+  Lives in `src/`. The canonical authoritative parameter contract is the
+  Hungarian-language docblock at the top of
+  `/Users/baxi/Work/greengo/backoffice/3Development/v5/src/bo_fileHandler.php` —
+  read it before changing any handling logic. Bootstraps with
+  `include '_init.php'` (needs the namespace autoloader for image
+  helpers).
+
+- **`fe_fileHandler.php`** — public/frontend bridge. POSTs to the BO
+  handler over HTTP using the `FileHandler.URL` config key, exposing a
+  much narrower surface (`FileOperation=READ`, `SourceType=OBJECT`).
+  Bootstraps with `require_once __DIR__ . '/__eisodos.php'` only — it
+  doesn't autoload any classes. Used to bridge a public portal into the
+  back-office file store without exposing the BO endpoint directly.
+
+The wiring config you must set:
+
+```ini
+FileHandler.URL=https://backoffice.internal/bo_fileHandler.php
+FileHandler.FILE.BasePath=/app/files/files
+FileUploadPath=/app/files/files/tmp
+```
+
+The FE handler's request body shape:
+
+```php
+$fileHandler = [
+  'FileOperation'     => 'READ',
+  'SourceType'        => 'OBJECT',
+  'SourceObject'      => basename(Eisodos::$parameterHandler->getParam('SourceObject')),
+  'SourceFileName'    => basename(Eisodos::$parameterHandler->getParam('SourceFileName')),
+  'SourceFileDate'    => Eisodos::$parameterHandler->getParam('SourceFileDate'),
+  'OriginalFileName'  => basename(Eisodos::$parameterHandler->getParam(
+                                   'OriginalFileName',
+                                   Eisodos::$parameterHandler->getParam('filename'))),
+  'Caller'            => Eisodos::$parameterHandler->getParam('Filehandler.Caller'),
+  'ResponseType'      => 'JSON',
+  'SuppressLogError'  => 'T',
+];
+$ctx = stream_context_create(['http' => [
+  'header'  => "Content-type: application/x-www-form-urlencoded\r\n",
+  'method'  => 'POST',
+  'content' => http_build_query($fileHandler),
+]]);
+$result = file_get_contents(
+  Eisodos::$parameterHandler->getParam('FileHandler.URL'),
+  false, $ctx
+);
+```
+
+The BO handler returns JSON `{"errorcode":"0", "originalFileName":..., "sourceFileSize":..., ...}`;
+the FE handler decodes that, then streams the file content back to the
+browser with appropriate `Pragma`/`Expires`/`Content-Type` headers.
+Always check `errorcode !== '0'` before streaming — silent failures
+otherwise return an empty body.
+
+### 14.6 Helper endpoints (`bo_mailSender.php`, `bo_pushGateway.php`, `bo_printDocument.php`)
+
+Three common helper endpoints — all bootstrap framework-only with
+`require_once __DIR__ . '/__eisodos.php'` (no autoloader needed):
+
+**`bo_mailSender.php`** — accepts a `data` parameter (JSON body) and
+sends mail via `Eisodos::$mailer->sendMail(...)`. Disables noise:
+
+```php
+require_once __DIR__ . '/__eisodos.php';
+
+Eisodos::$parameterHandler->setParam('CollectLangIDs', 'F');
+Eisodos::$parameterHandler->setParam('IncludeStatistic', 'F');
+
+try {
+  $data = json_decode(
+    Eisodos::$parameterHandler->getParam('data'),
+    true, 512, JSON_THROW_ON_ERROR
+  );
+  // ... validate from/to/subject/body ...
+  // ... fetch attachments via FileHandler.URL ...
+  Eisodos::$mailer->sendMail(
+    $data['to'], $data['subject'], $data['body'], $data['from'],
+    $attachmentPaths, $attachmentStrings,
+    $data['cc'] ?? '', $data['bcc'] ?? '', $data['replyTo'] ?? ''
+  );
+} catch (Throwable $e) {
+  // structured JSON error
+}
+Eisodos::$render->finishRaw(false, false);
+```
+
+**`bo_pushGateway.php`** — outbound JSON push to a configurable URL.
+Accepts `P_URL` and `P_JSON` parameters. The auth header is currently
+hardcoded in greengo-bo — when migrating, parameterise it through config
+(`PushGateway.AuthHeader=...`) instead of inlining.
+
+```php
+require_once __DIR__ . '/__eisodos.php';
+
+$ch = curl_init();
+curl_setopt_array($ch, [
+  CURLOPT_URL            => Eisodos::$parameterHandler->getParam('P_URL'),
+  CURLOPT_RETURNTRANSFER => true,
+  CURLOPT_FOLLOWLOCATION => true,
+  CURLOPT_SSL_VERIFYPEER => false,           // greengo-bo current — review before reusing
+  CURLOPT_POST           => 1,
+  CURLOPT_HTTPHEADER     => [
+    'Content-Type: application/json',
+    'Authorization: Basic ' . Eisodos::$parameterHandler->getParam('PushGateway.AuthHeader'),
+  ],
+  CURLOPT_POSTFIELDS     => Eisodos::$parameterHandler->getParam('P_JSON', '{}'),
+]);
+Eisodos::$templateEngine->addToResponse(curl_exec($ch));
+curl_close($ch);
+Eisodos::$render->finish();
+```
+
+**`bo_printDocument.php`** — renders `print.<document_id>.main` from
+`src/assets/templates/` and outputs HTML. Bootstraps with the full
+`_init.php` because print templates often reference language-derived
+date formats:
+
+```php
+include '_init.php';
+Eisodos::$templateEngine->getTemplate(
+  'print.' . Eisodos::$parameterHandler->getParam('document_id') . '.main'
+);
+Eisodos::$render->finish();
+```
+
+**Choosing `__eisodos.php` vs `_init.php` for new helpers** — use the
+narrower bootstrap when the endpoint touches none of: app-namespaced
+classes, language-derived date params, the SPL autoloader. Otherwise
+use `_init.php`. Don't paste both.
+
 ---
 
 ## 15. Wizard parameters
@@ -1688,8 +2314,22 @@ Two simple optimisations to apply during migration:
 
 ## 19. Step-by-step migration recipe
 
-This is the linear procedure used in drp-v2 and greengo-v5. Follow it
-top-to-bottom; the app should be runnable after each numbered step.
+This is the linear procedure used in drp-v2, greengo-v5 (frontend),
+greengo-backoffice-v5, greengo-partnerportal-v5, ldu-backoffice-v2 and
+duvenbeck-v3-backoffice. Follow it top-to-bottom; the app should be
+runnable after each numbered step.
+
+### 19.1 Layout decision (before step 1)
+
+Choose **Layout A (flat)** or **Layout B (`src/`-based)** from §3.2.
+Stick with the one you choose — partial layouts confuse autoloaders and
+Docker mounts. Quick rule:
+
+- Single developer, single environment, < ~5 entry points → **A**.
+- Docker-built, multi-environment, multiple helper endpoints (file
+  handler, mailer, ls_client, push gateway) → **B**.
+
+### 19.2 The recipe
 
 1. **Inventory.**
     - List every `.php` entry point and `.template` file.
@@ -1697,16 +2337,31 @@ top-to-bottom; the app should be runnable after each numbered step.
     - Check templates for `<%SQL%`, `<%FUNC%`, `[#`, `[%`. Each one
       decides which parser you need.
     - `grep -RIn '\$c->' .` produces the search/replace working set.
+    - `grep -RIn '^\\s*session;' config/*.params` — list `session;` rules
+      to understand whether a custom session handler is needed.
 
-2. **Composer.** Create `composer.json` (§3.1). Pull in the relevant DB
-   connector(s) and `eisodos-sql-parser` if needed. `composer install`.
+2. **Composer.**
+    - Create `composer.json` (§3.1). PHP floor: `"php": "^8.4"`.
+    - Pull in the relevant DB connector(s) and `eisodos-sql-parser` if
+      needed.
+    - For Layout B, also create `composer.dev.json` with the
+      `/opt/local-dev/composer/...` symlink repos.
+    - Ship `composer_update.sh` + `composer_update_dev.sh` wrappers
+      (Layout B; see §3.1 Pattern B).
+    - `./composer_update.sh` (or `composer install` for Layout A).
 
-3. **Filesystem.** Copy `templates/`, `languages/`, `config/` into the
-   new project. Delete from `includes/`:
-    - `udSCGI.php`, `udSDelphiPHP.php`, `udSEditor*.php`
-    - `PhpConsole*`, `PhpConsole.php.deprecated`
-    - `MDB2.php`, `MDB2/`, `PEAR.php`
-    - `Mail.php`, `Mail/`
+3. **Filesystem.**
+    - Layout A: copy `templates/`, `languages/`, `config/` into the new
+      project root.
+    - Layout B: place `templates/`, `assets/`, `i18n/` under `src/` (or
+      `src/assets/` for templates); externalize `config/` to
+      `_docker_images/applications/<app>/config/config/` and mount at
+      runtime.
+    - Delete from `includes/`:
+      - `udSCGI.php`, `udSDelphiPHP.php`, `udSEditor*.php`
+      - `PhpConsole*`, `PhpConsole.php.deprecated`
+      - `MDB2.php`, `MDB2/`, `PEAR.php`
+      - `Mail.php`, `Mail/`
 
    The Eisodos framework itself does **not** need a hand-rolled vendor
    copy. Anything else legacy code requires (`StoredProcedureHelper.php`)
@@ -1723,20 +2378,34 @@ top-to-bottom; the app should be runnable after each numbered step.
     - Move DB connection info into a `[Database]` section in the
       connector-specific format (§7.1).
     - Mark sensitive keys readonly with a leading `.`.
+    - If using `_init_parameters.php`: ensure `HU.DATEFORMAT=...`,
+      `HU.JSDATEFORMAT=...`, `HU.PHPDATEFORMAT=...` (and equivalents
+      per language in `Langs=`) are present — see §4.5.
 
-6. **Bootstrap.** Replace `_init.php` with the Eisodos bootstrap
-   (§4.2 single-file or §4.3 split). Verify the page loads.
+6. **Bootstrap.**
+    - Layout A: replace `_init.php` with the §4.2 single-file template.
+    - Layout B: create the four-file split from §4.3 — `__eisodos.php`,
+      `_init.php`, `_autoload.php`, `_init_parameters.php`. Use one app
+      namespace consistently (e.g. `greengo`, `nop_bo`, `duvenbeck_bo`).
+    - Decide eager vs lazy DB connection (§7.1) — default: lazy, no
+      `->connect()` call in `__eisodos.php`.
+    - Verify the page loads (`?DEBUGMESSAGES=T`).
 
 7. **Callbacks.** Open `_callbacks.php`.
     - Change signature from `function callback_default($c, $LFuncParams)`
-      to `function callback_default(array $LFuncParams = [], string $parameterPrefix_ = '')`.
+      to `function callback_default(array $LFuncParams = []): mixed`
+      (or the two-arg form if you read `$parameterPrefix_`).
     - Apply the search/replaces from §8.5.
     - Wrap every `$LFuncParams[...]` access in
       `Eisodos::$utils->safe_array_value`.
+    - Port the date/time helper funcjob set (§8.5) — even small apps
+      tend to use `today`, `now`, `lastweek`, `ymdhis`.
 
 8. **Each page entry.** For every `.php` file in the app:
     - Replace `$c = new udSCGI(...)` / `require_once 'includes/udSCGI.php'`
-      with `include '_init.php'`.
+      with `include '_init.php'` (full bootstrap) **or**
+      `require_once __DIR__ . '/__eisodos.php'` (framework only — for
+      helpers that don't need the autoloader or date params; see §14.6).
     - Apply `$c->` → `Eisodos::$...` rewrites from §2.
     - Replace SQL helpers with `connector()->query(RT_*, ...)`.
     - Replace `np($c, 'name', ...)` with
@@ -1745,48 +2414,70 @@ top-to-bottom; the app should be runnable after each numbered step.
       `Eisodos::$render->finish()` / `finishRaw()`.
     - Replace `PC::debug(...)` with `Eisodos::$logger->debug(...)`.
 
-9. **Globals.** Where the legacy code did `global $c;` in helper
-   functions, simply drop the `global` and use `Eisodos::$...` directly
-   — every singleton is statically accessible.
+9. **Helper endpoints.** Port the standard helper set if the legacy app
+   had any (§14.4–14.6):
+    - `ls_client.php` — LangServer client.
+    - `bo_fileHandler.php` + `fe_fileHandler.php` — file operations.
+    - `bo_mailSender.php` — JSON-driven mail dispatcher.
+    - `bo_pushGateway.php` — outbound JSON push (parameterise the auth
+      header — don't inline like greengo-bo currently does).
+    - `bo_printDocument.php` — print template renderer.
 
-10. **Templates.** No content changes are required except:
+10. **Globals.** Where the legacy code did `global $c;` in helper
+    functions, simply drop the `global` and use `Eisodos::$...` directly
+    — every singleton is statically accessible.
+
+11. **Templates.** No content changes are required except:
     - Remove `<%SQL%` blocks if you decide not to register `SQLParser`.
     - Replace any handwritten references to `$response_string`
       (rare).
     - Verify any custom `LangOpenChar`/`LangCloseChar` is preserved in
       `[Config]`.
 
-11. **Cron / CLI scripts.** Same rewrite as page entries, but always
+12. **Cron / CLI scripts.** Same rewrite as page entries, but always
     call `Eisodos::$render->finishRaw(false, false)` at the end so no
     HTML wrapping occurs.
 
-12. **Smoke test.**
+13. **Smoke test.**
     - Hit each entry point with `RELOAD=T`, `DEBUGMESSAGES=T`.
     - Watch `.ErrorLog` and `CollectParamsToFile`.
     - Compare rendered HTML byte-for-byte against the legacy site for at
       least the most-used pages — diff catches missed `$c->` translations
       and missing config keys.
     - Run any cron jobs at least once in dev with the new bootstrap.
+    - For Layout B with Docker: `cd /Users/baxi/Work/_docker_images/applications/<app>/ && ./run.sh <repo-path> latest`.
 
-13. **Sanity audit.**
-    - `grep -RIn '\\$c->' .` — must return nothing.
-    - `grep -RIn 'PC::' .` — must return nothing.
-    - `grep -RIn 'getSQL\\b\\|getSQLback\\|getSQLtoArray' .` — must
+14. **Sanity audit.**
+    - `grep -RIn '\\$c->' src/` — must return nothing.
+    - `grep -RIn 'PC::' src/` — must return nothing.
+    - `grep -RIn 'getSQL\\b\\|getSQLback\\|getSQLtoArray' src/` — must
       return nothing.
-    - `grep -RIn 'D_pos\\|D_copy\\|D_replace\\|D_isint\\|D_gen_uuid' .` —
+    - `grep -RIn 'D_pos\\|D_copy\\|D_replace\\|D_isint\\|D_gen_uuid' src/` —
       must return nothing.
-    - `grep -RIn 'new PEAR' .` — must return nothing.
-    - `grep -RIn 'PEAR_Error\\|MDB2_Driver_Common\\|MDB2::' .` — must
+    - `grep -RIn 'new PEAR' src/` — must return nothing.
+    - `grep -RIn 'PEAR_Error\\|MDB2_Driver_Common\\|MDB2::' src/` — must
       return nothing (unless using `ConnectorMDB2`'s internals).
-    - `grep -RIn 'np(\\$c,' .` — must return nothing.
+    - `grep -RIn 'np(\\$c,' src/` — must return nothing.
+    - `grep -RIn 'udSCGI' src/` — must return nothing.
+    - `grep -RIn '\\$LFuncParams\\[' src/_callbacks.php` — should return
+      **nothing** (use `safe_array_value` instead). Tolerate matches
+      inside string literals.
+    - `php -l` every file under `src/` (and `src/_callbacks.php` in
+      particular).
 
 ---
 
 ## 20. Common gotchas and known pitfalls
 
-1. **`session_start()` ordering.** If `.params` declares `session;…`
-   rules, start the session before `Render::start()` runs. drp-v2 calls
-   `session_start()` at the very top of `_init.php`.
+1. **`session_start()` ordering — usually NOT required.** The four
+   recent migrations (greengo-bo, greengo-pp, ldu-bo, duvenbeck-v3) all
+   omit `session_start()` from bootstrap and rely on `Render::start()`.
+   Earlier guidance in this guide to "always call it yourself when
+   `.params` has `session;…` rules" was overcautious. Only call it
+   yourself when you have a custom session save handler that must be
+   active before `Render::start()` runs (Redis / DB session), or when
+   you need `$_SESSION` populated before any code in `__eisodos.php`
+   itself reads from it.
 
 2. **Readonly config keys.** udSCGI silently allowed query-string
    parameters to override config values. In Eisodos, prefix the key
@@ -1805,9 +2496,13 @@ top-to-bottom; the app should be runnable after each numbered step.
    `DEBUGGERSTORAGE`, `setPostponeStorage(...)`, `Connector::setPassword`
    references.
 
-6. **`addToResponse`, not `$Response`.** Direct string concatenation
-   onto a `Response` property no longer affects output. Always go
-   through `Eisodos::$templateEngine->addToResponse()`.
+6. **`addToResponse` is the documented API, but `Render::Response` still
+   exists.** The public `Eisodos::$render->Response` property is
+   reachable for low-level recovery — every recent migration's catch
+   block clears it as `Eisodos::$render->Response = '';` before writing
+   an error message via `addToResponse`. Don't *write* to it from
+   normal code; treat it as an exception-handler escape hatch only.
+   Normal output always goes through `Eisodos::$templateEngine->addToResponse()`.
 
 7. **PEAR `isError()` checks are gone.** `query()` returns `false` on
    error (when you opt out of exceptions); `executeDML` and friends
@@ -1851,7 +2546,49 @@ top-to-bottom; the app should be runnable after each numbered step.
 15. **Empty `LFuncParams['funcjob']` warnings.** Wrap every callback
     body in
     `if (!array_key_exists('funcjob', $LFuncParams)) { Eisodos::$logger->alert('No funcjob in callback!'); }`
-    to surface bad templates immediately.
+    to surface bad templates immediately. (Or use the cleaner
+    `safe_array_value` form — see §8.3.)
+
+16. **Lazy DB connection silently swallows config errors.** If
+    `__eisodos.php` only calls `registerDBConnector(...)` and never
+    `->connect()`, a malformed `[Database]` section won't blow up at
+    bootstrap — it surfaces on the first query, often deep inside a
+    template parse. When debugging "the page renders but my SQL block
+    returns nothing", check `Eisodos::$parameterHandler->getParam('LastSQLError')`
+    and consider temporarily adding an eager `->connect()` to surface
+    the real error early.
+
+17. **Application name in `init([$dir, $name])` is decoupled from the
+    directory.** It drives config file naming (`{env}-<name>.conf`),
+    `$_applicationname`, log paths, and `CollectParamsToFile`. The
+    duvenbeck-v3 backoffice uses `'greengo_pp'` despite living under
+    `duvenbeck_v3/`. Pick the name to match the deployed config files,
+    not the repo path — and verify both sides agree before going live.
+
+18. **`__eisodos.php`'s `require_once '../vendor/autoload.php'` is
+    relative to `src/`.** Layout B always nests bootstrap under `src/`
+    and vendor at the repo root, so `..` resolves correctly. If you
+    flatten the layout later (move `__eisodos.php` to the repo root),
+    you must change this to `./vendor/autoload.php` or `__DIR__ .
+    '/vendor/autoload.php'`.
+
+19. **`_autoload.php`'s loader is one-level only.** `<appname>\Foo\Bar`
+    will fail because the loader does `explode('\\', $class)[1] . '.php'`
+    and ignores anything past segment 1. If you need subnamespaces,
+    switch to Composer PSR-4 in `composer.json` instead of extending the
+    SPL loader — it's not designed for nesting.
+
+20. **`fe_fileHandler.php` silently returns empty body on errors.** The
+    decoded JSON from the BO handler ships an `errorcode` field that's a
+    *string* `"0"` on success. Check it via `!== '0'`, not `!= 0`
+    (integer mismatch). All four migrations got this right; new code
+    tends to get it wrong.
+
+21. **`bo_pushGateway.php` ships with `CURLOPT_SSL_VERIFYPEER = false`
+    and a hardcoded auth header in greengo-bo.** When porting,
+    parameterise the auth header through config
+    (`PushGateway.AuthHeader=...`) and remove the `VERIFYPEER` flag (or
+    bring your own CA bundle) before reusing in any new app.
 
 ---
 
@@ -1912,6 +2649,8 @@ duvenbeck pair for Tholos-specific questions.
 
 Concrete file pairs to consult during a migration:
 
+### Layout A reference (drp-v2 / greengo frontend)
+
 | Legacy | Eisodos |
 | --- | --- |
 | `/Users/baxi/Work/drp/_init.php` | `/Users/baxi/Work/drp-v2/sites/dev/drp/_init.php` |
@@ -1924,11 +2663,46 @@ Concrete file pairs to consult during a migration:
 | `/Users/baxi/Work/greengo/.../portal-v3/hu/_init.php` | `/Users/baxi/Work/greengo/.../portal-v5/hu/_init.php` + `__eisodos.php` |
 | `/Users/baxi/Work/greengo/.../portal-v3/hu/_callbacks.php` | `/Users/baxi/Work/greengo/.../portal-v5/hu/_callbacks.php` |
 
+### Layout B reference (Tholos-layered, but Eisodos parts apply 1:1 — ignore the Tholos pieces)
+
+The four migrations below are the canonical reference for the
+`src/`-based Layout B and the four-file bootstrap split (§4.3–4.5). Use
+them as a copy-paste source for `__eisodos.php`, `_init.php`,
+`_autoload.php`, `_init_parameters.php`, the helper endpoints
+(§14.4–14.6), and the `composer.json` / `composer.dev.json` /
+`composer_update*.sh` skeletons. **Skip everything Tholos-related** in
+these projects (`tholos/`, `tholos.conf`, `_run.php`, classes extending
+`Tholos\TCustomModule`, anything under namespace use of `Tholos\*`) —
+those don't belong in a pure-Eisodos target.
+
+| Migration pair | Legacy (udSCGI/Tholos) | Migrated (Eisodos/Tholos) |
+| --- | --- | --- |
+| greengo backoffice | `/Users/baxi/Work/greengo/backoffice/3Development/portal/` | `/Users/baxi/Work/greengo/backoffice/3Development/v5/` |
+| greengo partnerportal | `/Users/baxi/Work/greengo/partnerportal/3Development/portal/portal-v4/` | `/Users/baxi/Work/greengo/partnerportal/3Development/portal/portal-v5/` |
+| ldu backoffice | `/Users/baxi/Work/ldu/backoffice-svn/portal/` | `/Users/baxi/Work/ldu/backoffice/v2/` |
+| duvenbeck backoffice | `/Users/baxi/Work/duvenbeck_backoffice/portal/` | `/Users/baxi/Work/duvenbeck_v3/backoffice/` |
+
+Concrete files to read first for the Eisodos parts:
+
+- `<migrated>/composer.json` and `<migrated>/composer.dev.json` — §3.1.
+- `<migrated>/composer_update.sh` and `<migrated>/composer_update_dev.sh` — §3.1.
+- `<migrated>/src/__eisodos.php` — §4.3 canonical body.
+- `<migrated>/src/_init.php` — §4.3 (three-liner).
+- `<migrated>/src/_autoload.php` — §4.4.
+- `<migrated>/src/_init_parameters.php` — §4.5.
+- `<migrated>/src/_callbacks.php` — §8.3, §8.5.
+- `<migrated>/src/ls_client.php` — §14.4.
+- `<migrated>/src/bo_fileHandler.php` + `<migrated>/src/fe_fileHandler.php` — §14.5.
+- `<migrated>/src/bo_mailSender.php`, `bo_pushGateway.php`, `bo_printDocument.php` — §14.6.
+- `<migrated>/CLAUDE.md` (greengo-backoffice only) — team-facing summary
+  of the same patterns this guide documents; good cross-check.
+
 Production-ready configuration skeletons (Tholos-on-Eisodos but the
 Eisodos parts apply 1:1):
 
 - `/Users/baxi/Work/_docker_images/applications/greengo/backoffice/config/config/{greengo_bo.conf, global.conf, i18n.conf, tholos.conf, filehandler.conf, greengo_bo.params}`
 - `/Users/baxi/Work/_docker_images/applications/greengo/frontend/config/...`
+- `/Users/baxi/Work/_docker_images/applications/greengo/partnerportal/config/config/{greengo_pp.conf, ...}`
 - `/Users/baxi/Work/_docker_images/applications/ldu/backoffice/config/config/{nop_bo.conf, global.conf, i18n.conf, tholos.conf, filehandler.conf, nop_bo.params}`
 - `/Users/baxi/Work/_docker_images/applications/ldu/frontend/config/config/{nop_pp.conf, ...}`
 - `/Users/baxi/Work/_docker_images/applications/langserver/config/...`
