@@ -267,10 +267,10 @@
         $mu = memory_get_usage(true);
         $pmu = memory_get_peak_usage(true);
         $memoryUsage = (@round(
-              $mu / (1024 ** ($i = (integer)floor(log($mu, 1024)))),
+              $mu / (1024 ** ($i = (int)floor(log($mu, 1024)))),
               2
             ) . ' ' . $unit[$i]) . ' (' . (@round(
-              $pmu / (1024 ** ($i = (integer)floor(log($pmu, 1024)))),
+              $pmu / (1024 ** ($i = (int)floor(log($pmu, 1024)))),
               2
             ) . ' ' . $unit[$i]) . ')';
         //$executionTime = bcsub($b_string, $a_string). (microtime() - $this->_scriptStartTime);

@@ -71,7 +71,7 @@
       
       // check REPOST
       if ($this->neq('PostID', '')) {
-        if ((integer)$this->getParam('PostID') <= (integer)$this->getParam('LastPostID')) {
+        if ((int)$this->getParam('PostID') <= (int)$this->getParam('LastPostID')) {
           $this->setParam('RePost', 'T', false, false, 'eisodos::parameterHandler');
         } else {
           $this->setParam('LastPostID', $this->getParam('PostID'), true, false, 'eisodos::parameterHandler');
@@ -79,7 +79,7 @@
       }
       
       // increase LastPostID
-      $this->setParam('PostID', (string)((integer)$this->getParam('LastPostID') + 1), false, false, 'eisodos::parameterHandler');
+      $this->setParam('PostID', (string)((int)$this->getParam('LastPostID') + 1), false, false, 'eisodos::parameterHandler');
       
       if ($this->neq('Reload', 'F')) {
         if ((string)$crc === $this->getParam('CRC')) {
@@ -365,7 +365,7 @@
      * Loads session variables into the parameter array and filters them by the rules defined in the .params file
      */
     private function _loadSessionVariables(): void {
-      mt_srand((double)microtime() * 1000000);
+      mt_srand((float)microtime() * 1000000);
       if (!session_id()) {
         session_set_cookie_params($this->getCookieParams());
         session_name($this->getParam('_environment') . ($this->getParam('_environment') ? '-' : '') . Eisodos::$applicationName);

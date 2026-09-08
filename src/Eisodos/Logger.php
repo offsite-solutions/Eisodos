@@ -352,7 +352,6 @@
           curl_setopt_array($curl, $options);
           
           curl_exec($curl);
-          curl_close($curl);
           
         }
       } catch (Exception $e) {

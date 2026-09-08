@@ -3,3 +3,6 @@
 /composer.lock
 /tests/logs/
 /docs/
+
+# codebase-memory-mcp local cache
+.codebase-memory/

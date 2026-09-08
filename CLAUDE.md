@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Eisodos is a PHP 8.4+ page generation framework with singleton-based architecture. It provides configuration management, template processing, internationalization, logging, and database abstraction.
+Eisodos is a PHP 8.4+ (tested on 8.5) page generation framework with singleton-based architecture. It provides configuration management, template processing, internationalization, logging, and database abstraction.
 
 This repository is the **framework source** (`offsite-solutions/eisodos`). Plugin packages live in sibling directories:
 

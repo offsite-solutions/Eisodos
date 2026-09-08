@@ -309,7 +309,7 @@
      * @return string
      */
     public function parse(string $text_, array|null $listOfValuePairs_ = [], bool $disableParsing_ = false): string {
-      $loopCountLimit = (integer)Eisodos::$parameterHandler->getParam('LOOPCOUNT', '1000');
+      $loopCountLimit = (int)Eisodos::$parameterHandler->getParam('LOOPCOUNT', '1000');
       
       if (!$listOfValuePairs_) {
         $listOfValuePairs_ = [];
@@ -496,7 +496,7 @@
      * @return string
      */
     public function replaceParamInString(string $text_): string {
-      $loopCountLimit = (integer)Eisodos::$parameterHandler->getParam('LOOPCOUNT', '1000');
+      $loopCountLimit = (int)Eisodos::$parameterHandler->getParam('LOOPCOUNT', '1000');
       $LoopCount = 0;
       $match = '';
       while (($pos = $this->_getParameterPos($text_, $match)) !== false

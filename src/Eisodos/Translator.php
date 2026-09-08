@@ -159,7 +159,7 @@
      * @return string
      */
     public function translateText(string $text_, bool $findHashmarked_ = false): string {
-      $loopCountLimit = (integer)Eisodos::$parameterHandler->getParam('LOOPCOUNT', '1000');
+      $loopCountLimit = (int)Eisodos::$parameterHandler->getParam('LOOPCOUNT', '1000');
       $LoopCount = 0;
       while ((Eisodos::$parameterHandler->neq('LANGS', '')
           and str_contains($text_, '[:'))
