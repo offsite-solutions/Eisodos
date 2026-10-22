@@ -329,11 +329,17 @@
       if (!is_array($value_)) {
         $value_ = (string)$value_;
       }
+      // values supplied by the visitor (request, cookie, session); both switches default to F
+      $fromVisitor = in_array($source_, ['request', 'cookie', 'session'], true);
+      if ($fromVisitor && $this->isOn('SANITIZEINPUTPARAMS')) {
+        $value_ = $this->_neutralizeTemplateSyntax($value_);
+      }
       if (($source_ !== 'request' && $source_ !== '')
         || !array_key_exists($parameterName_, $this->_params)
         || !$this->_params[$parameterName_]['readonly']
       ) {
-        if (!is_array($value_) && ($value_ !== '') && ($value_[0] === '^')) {
+        if (!is_array($value_) && ($value_ !== '') && ($value_[0] === '^')
+          && !($fromVisitor && $this->isOn('DISABLEINPUTREFERENCES'))) {
           $this->_params[$parameterName_]['value'] = $this->getParam(substr($value_, 1, strlen($value_)));
         } else {
           $this->_params[$parameterName_]['value'] = $value_;
@@ -359,6 +365,25 @@
       } else {
         Eisodos::$logger->error('Parameter ' . $parameterName_ . ' overwrite is forbidden to ' . $value_);
       }
+    }
+    
+    /**
+     * Replaces the template control sequences of a visitor-supplied value with HTML entities
+     * (SanitizeInputParams=T). Idempotent; arrays are processed element by element.
+     * @param mixed $value_
+     * @return mixed
+     */
+    private function _neutralizeTemplateSyntax(mixed $value_): mixed {
+      if (is_array($value_)) {
+        return array_map(fn($v) => $this->_neutralizeTemplateSyntax($v), $value_);
+      }
+      return strtr((string)$value_, [
+        '$' => '&#36;',
+        '<%' => '&lt;%',
+        '[%' => '&#91;%',
+        '[#' => '&#91;#',
+        '[:' => '&#91;:',
+      ]);
     }
     
     /**
