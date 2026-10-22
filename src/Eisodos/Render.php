@@ -337,23 +337,23 @@
         if (Eisodos::$parameterHandler->neq('TITLEREPLACETAG', '')) {
           $title = $this->everything_in_tags($this->Response, Eisodos::$parameterHandler->getParam('TITLEREPLACETAG'));
         } else {
-          $a = @strpos(Eisodos::$parameterHandler->getParam('TITLEREPLACE'), $this->Response);
+          $a = strpos($this->Response, Eisodos::$parameterHandler->getParam('TITLEREPLACE'));
           if ($a !== false) {
             $a += strlen(Eisodos::$parameterHandler->getParam('TITLEREPLACE'));
             $b = strpos(
+              $this->Response,
               Eisodos::$utils->replace_all(
                 Eisodos::$parameterHandler->getParam('TITLEREPLACE'),
                 '<',
                 '</',
                 false,
                 false
-              ),
-              $this->Response
+              )
             );
             $title = substr($this->Response, $a, $b - $a);
             if (Eisodos::$parameterHandler->isOn('TITLECUT')) {
-              if (str_contains('<', $title)) {
-                $title = substr($title, 0, strpos('<', $title) - 1);
+              if (str_contains($title, '<')) {
+                $title = substr($title, 0, strpos($title, '<'));
               }
             } else {
               $b = 0;
@@ -435,18 +435,18 @@
       }
       
       if (Eisodos::$parameterHandler->neq('DESCRIPTIONSTRING', '') && !Eisodos::$parameterHandler->isOn('EditorMode')) {
-        $a = @strpos(Eisodos::$parameterHandler->getParam('DESCRIPTIONREPLACE'), $this->Response);
+        $a = strpos($this->Response, Eisodos::$parameterHandler->getParam('DESCRIPTIONREPLACE'));
         if ($a !== false) {
           $a += strlen(Eisodos::$parameterHandler->getParam('DESCRIPTIONREPLACE'));
           $b = strpos(
+            $this->Response,
             Eisodos::$utils->replace_all(
               Eisodos::$parameterHandler->getParam('DESCRIPTIONREPLACE'),
               '<',
               '</',
               false,
               false
-            ),
-            $this->Response
+            )
           );
           $title = '';
           if ($b > 0 && $b > $a) {
