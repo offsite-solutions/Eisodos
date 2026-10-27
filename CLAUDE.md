@@ -288,6 +288,10 @@ session;LANG;/^(HU|EN|CZ)$/i;HU;Nyelvhiba        # rules can stack
 
 Format: `<scope>;<NAME>;<regex>;<default>;<error_msg>`. Scopes: `exclude`, `session`, `cookie`, `permanent`, `encoded`, `cookie_encoded`, `session_encoded`, `protected`, `protected_encoded`, `input`, `skip`.
 
+The regex only checks GET/POST values; cookies are loaded without it. Validate visitor values where they are inserted with typed parameters (see Template Syntax → Typed Parameters).
+
+**Input hardening switches** (both default `F`): `SanitizeInputParams=T` replaces `$`, `<%`, `[%`, `[#`, `[:` in visitor values with HTML entities; `DisableInputReferences=T` stores a visitor value starting with `^` as text instead of resolving it.
+
 ## Parameter Handling
 
 ```php
@@ -329,6 +333,8 @@ $templateabs_header_main    <!-- Embed header.main.template -->
 ```
 
 ### Typed Parameters
+
+Full reference with processing order and pitfalls: [`documentation/migration_from_udSCGI.md`](documentation/migration_from_udSCGI.md) §8.1.1.
 
 `$param[[type,default,protection]]` validates and escapes a visitor-supplied value where it is inserted. All three fields are optional; trailing empty fields can be omitted (`[[numeric]]`, `[[HUF|EUR|USD,EUR]]`, `[[,,javascript]]`).
 

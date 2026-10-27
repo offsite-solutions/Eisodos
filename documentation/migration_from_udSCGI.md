@@ -211,6 +211,7 @@ symbol that is not listed here, it is either part of `udSDelphiPHP.php`
 | `$c->ParseUserFunc = false` | Don't register `CallbackFunctionParser` / `CallbackFunctionShortParser`. | The legacy switch is replaced by parser opt-in. |
 | Default callback name | `Eisodos::$templateEngine->setDefaultCallbackFunction('callback_default')` | Free-function name (string). |
 | `_doCallback / _doUserCallback / _replaceSQL` (private) | Built into `CallbackFunctionParser`, `CallbackFunctionShortParser`, `SQLParser` plugins. | See §8. |
+| Raw `$param` of a visitor value in SQL / HTML / JS | `$param[[type,default,protection]]` | New in Eisodos 1.1.21. Validates and escapes at the point of insertion. See §8.1.1. |
 
 ### 2.4 Translator
 
@@ -1058,6 +1059,11 @@ The `regex` column is optional. When provided it is applied **after**
 decoding and overrides the parameter value with `<default>` (or
 redirects when `<error_msg>` is a URL).
 
+The regex only checks GET/POST values. Cookies are loaded before the
+`.params` rules run, without validation, so a `cookie;CURRENCY;/…/`
+rule does not stop a forged cookie. Validate such values where you insert them,
+with a typed parameter (§8.1.1).
+
 Example used by drp-v2 (`/Users/baxi/Work/drp-v2/sites/dev/drp/config/drp.params`):
 
 ```
@@ -1459,25 +1465,81 @@ files udSCGI used.
 | `{# urlencoded text #}` | URL-decoded block (legacy `_changeEncode`). |
 | `\{` / `\}` | Escaped `{` / `}`. |
 
-**Typed parameters.** `$param[[type,default,protection]]` validates and
-escapes a visitor-supplied value at the point of insertion, so many
-`.params` regex rules can move into the template:
-
-```html
-p_$currency[[HUF|EUR|USD,EUR]]                     <!-- invalid -> EUR, also stored -->
-where muid=$muid[[numeric]]                        <!-- invalid -> RuntimeException -->
-where csopids='$csopids[[string,,sql]]~='DEFAULT';' <!-- ' doubled; empty -> DEFAULT -->
-let param='$param[[,,javascript]]';                <!-- abc'de -> abc\'de -->
-```
-
-Empty values skip the check. The inserted value loses `$`, `_dollar_`,
-`[%`, `<%`, `[:`, `[#`, `{#` and `#}`, and its ends are trimmed where they
-would form one of these with the template text. The `sql` protection only doubles `'`; handle
-backslash-sensitive databases in code. See `CLAUDE.md` → Typed
-Parameters for the full field reference.
-
 Active-version-aware template names (`header.v3.template`, etc.) are
 supported via the `ActiveVersions` config key — see §17.
+
+#### 8.1.1 Typed parameters (`$param[[…]]`)
+
+A plain `$param` inserts the value unformatted and unvalidated. When the
+value comes from the visitor (GET, POST, cookie) and lands in SQL, HTML
+or JavaScript, that is an injection point. Since Eisodos 1.1.21 the
+template can validate and escape the value where it is inserted:
+
+```
+$param[[type,default,protection]]
+$param[[type,default,protection]]~='used when empty';
+```
+
+All three fields are optional, and trailing empty fields can be left
+out: `[[numeric]]`, `[[HUF|EUR|USD,EUR]]`, `[[,,javascript]]`. Templates
+without `[[…]]` behave exactly as before.
+
+| Field | Values |
+| --- | --- |
+| type | Empty or `string`: any value. `numeric`: an integer, optionally negative (`/^-?\d+$/`). Anything else is a regex without delimiters, matched against the whole value. |
+| default | Used when a non-empty value fails the type check. It is also stored in the parameter, so later uses see it, and a cookie-stored value is corrected in the response. Without a default, a failed check throws `RuntimeException`. |
+| protection | Empty: no escaping. `sql`: doubles `'`; the template keeps the quotes. `html`: `htmlspecialchars(…, ENT_QUOTES \| ENT_SUBSTITUTE)`. `javascript`: escapes `\`, `'`, `"`, line breaks, U+2028/U+2029 and `</` for a JS string literal. |
+
+Processing order for a non-empty value:
+
+1. Type check. On failure: the default (escaped with the same
+   protection), or `RuntimeException`.
+2. Template control sequences are removed: `$`, `_dollar_`, `[%`, `<%`,
+   `[:`, `[#`, `{#`, `#}`. The ends of the value are also trimmed where
+   they would form one of these with the template text next to it (for
+   example a value ending in `[` before a `%` in the template). This
+   holds even with `SanitizeInputParams=F`.
+3. Escaping by the protection field.
+
+| Template | Input | Output |
+| --- | --- | --- |
+| `p_$currency[[HUF\|EUR\|USD,EUR]]` | cookie `currency=CHF` | `p_EUR`; the parameter and the cookie become `EUR` |
+| `p_$currency[[HUF\|EUR\|USD,EUR]]` | none | `p_` |
+| `where muid=$muid[[numeric]]` | `muid=1 or 1=1` | `RuntimeException` |
+| `where csopids='$csopids[[string,,sql]]~='DEFAULT';'` | `csopids=a'b` | `where csopids='a''b'` |
+| `where csopids='$csopids[[string,,sql]]~='DEFAULT';'` | none | `where csopids='DEFAULT'` |
+| `let param='$param[[,,javascript]]';` | `param=abc'de` | `let param='abc\'de';` |
+| `'$x[[,,sql]]'` | `x=a$dbpassword` | `'adbpassword'` |
+
+Rules worth knowing:
+
+- **An empty value is always valid.** The type check is skipped and
+  `~='…';` applies as usual. Handling an empty `where muid=` is the
+  developer's job.
+- **The exception is not caught by the framework.** It propagates out of
+  `parse()` / `getTemplate()`; catch it in the calling code.
+- **`sql` is database-independent.** It only doubles `'`. On MySQL or
+  PostgreSQL with `standard_conforming_strings=off`, backslash matters
+  too; handle that in code.
+- **Inside the rule**, write a literal comma as `\,` (`[0-9]{1\,3}`), `]]`
+  as `\x5D`, `;` as `\x3B` and `$` as `\x24`. A `[[…]]` that contains
+  `;`, `$` or a line break, or is longer than 255 characters, is plain
+  text, not a rule.
+- **A `$` in the template directly before a typed parameter throws**
+  (`US$$price[[numeric]]`). Write `US_dollar_$price[[numeric]]`.
+- **Ignored cases:** `$param[[…]]:='…';` and the `template_`,
+  `templateabs_` and `callback_` names drop the rule and run as before.
+- **Readonly parameters** (config keys with a leading `.`) keep their
+  value; a failed check only inserts the default.
+- **`^` references** are resolved by `setParam()` when the value is set,
+  so the rule checks the resolved value.
+- **JSON endpoints:** `Render::finishRaw()` writes no cookies, so a
+  corrected cookie value is not sent back there.
+
+Migration tip: a `.params` regex rule such as
+`input;CURRENCY;/^(HUF|EUR|USD)$/;EUR;` can become
+`$currency[[HUF|EUR|USD,EUR]]` at each place the value is used. The
+template version also covers cookies.
 
 ### 8.2 Parser registration
 
@@ -2286,6 +2348,21 @@ The udSCGI `csid` mechanism is preserved so you don't have to rewrite
 every form during migration — but treat it as a legacy compatibility
 shim, not a new security primitive.
 
+### 16.1 Template injection hardening
+
+Three opt-in tools protect templates from visitor input:
+
+| Tool | Since | What it does |
+| --- | --- | --- |
+| `$param[[type,default,protection]]` | 1.1.21 | Validates, strips template control sequences and escapes one value where it is inserted. See §8.1.1. |
+| `SanitizeInputParams=T` | 1.1.20 | Replaces `$`, `<%`, `[%`, `[#`, `[:` in every visitor value (request, cookie, session) with HTML entities when the value is stored. |
+| `DisableInputReferences=T` | 1.1.20 | Stores a visitor value starting with `^` as text instead of resolving it as a reference to another parameter. |
+
+Both switches default to `F` in `common_pre_{dev,test,live}.conf`. Use
+typed parameters for every visitor value that reaches SQL, HTML
+attributes or JavaScript; turn on the switches when the app never needs
+template syntax in its input.
+
 ---
 
 ## 17. Active versions (`DevVersion`, `ActiveVersions`)
@@ -2481,6 +2558,10 @@ Docker mounts. Quick rule:
       inside string literals.
     - `php -l` every file under `src/` (and `src/_callbacks.php` in
       particular).
+    - Review every visitor-supplied `$param` inside `<%SQL%>` blocks,
+      HTML attributes and `<script>` code, and give it a `[[…]]` rule
+      (§8.1.1). Start from the `.params` file and from
+      `grep -RIn "'\$[a-z_]*'" src/assets/templates/`.
 
 ---
 
@@ -2606,6 +2687,17 @@ Docker mounts. Quick rule:
     parameterise the auth header through config
     (`PushGateway.AuthHeader=...`) and remove the `VERIFYPEER` flag (or
     bring your own CA bundle) before reusing in any new app.
+
+22. **Cookies bypass the `.params` regex.** Cookies are loaded into the
+    parameter array before the `.params` rules run, without validation.
+    A forged `CURRENCY=CHF` cookie once reached a `p_$currency` column
+    name in production. Validate such values with a typed parameter
+    (`p_$currency[[HUF|EUR|USD,EUR]]`, §8.1.1).
+
+23. **Typed parameter rule pitfalls.** A `;` or `$` inside `[[…]]` turns
+    the rule into plain text (write `\x3B` / `\x24`); a template `$`
+    directly before a typed parameter throws (write `_dollar_`); an
+    empty value always passes.
 
 ---
 
