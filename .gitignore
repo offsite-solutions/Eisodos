@@ -6,3 +6,5 @@
 
 # codebase-memory-mcp local cache
 .codebase-memory/
+
+/documentation/specs/
