@@ -121,6 +121,34 @@
     visitor('m', 'bad');
     check('default is not escaped', "it's", render('$m[[HUF|EUR,it\'s,sql]]'));
     
+    // review fixes: final-pass markers, value boundaries, anchoring, unclosed rules
+    visitor('e', '{#%24dbpassword#}');
+    check('urlencode block markers stripped', '<p>%24dbpassword</p>', render('<p>$e[[,,html]]</p>'));
+    visitor('e', '_dollar_dbpassword');
+    check('_dollar_ marker stripped', 'dbpassword', render('$e[[]]'));
+    visitor('x', 'dbpassword');
+    checkThrows('template $ before word value throws', fn() => render('US$$x[[,,html]]'));
+    visitor('price', '12');
+    check('_dollar_ before typed value', 'US_dollar_12', render('US_dollar_$price[[numeric]]'));
+    visitor('a', 'q[');
+    visitor('b', '%funcjob=eq;x=1%]');
+    check('adjacent values do not form [%', "'q[funcjob=eq;x=1%]'", render("'\$a[[,,sql]]\$b[[,,sql]]'"));
+    visitor('k', '%funcjob=evil%');
+    check('template [ before value', 'arr[funcjob=evil%]', render('arr[$k[[,,javascript]]]'));
+    visitor('t', '%FUNC%x%FUNC%');
+    check('template < before value', '<FUNC%x%FUNC%>', render('<$t[[,,javascript]]>'));
+    visitor('s', 'abc[');
+    check('value [ before template %', "like 'abc%'", render("like '\$s[[,,sql]]%'"));
+    visitor('w', '#x');
+    check('template { before value', '{x', render('{$w[[]]'));
+    visitor('c', "HUF\n");
+    check('trailing newline fails regex', 'p_EUR', render('p_$c[[HUF|EUR,EUR]]'));
+    visitor('muid', "12\n");
+    checkThrows('trailing newline fails numeric', fn() => render('$muid[[numeric]]'));
+    visitor('arr', 'v');
+    check('unclosed rule with later ]] untouched', 'x=v[[0]; y=m[n[1]];', render('x=$arr[[0]; y=m[n[1]];'));
+    check('unclosed rule with later [[..]] untouched', 'x=v[[0]; y=1; z=[[2]];', render('x=$arr[[0]; y=1; z=[[2]];'));
+    
   } catch (Exception $e) {
     if (!isset(Eisodos::$logger)) {
       die($e->getMessage());

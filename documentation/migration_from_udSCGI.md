@@ -1470,8 +1470,9 @@ where csopids='$csopids[[string,,sql]]~='DEFAULT';' <!-- ' doubled; empty -> DEF
 let param='$param[[,,javascript]]';                <!-- abc'de -> abc\'de -->
 ```
 
-Empty values skip the check. The inserted value never contains `$`,
-`[%`, `<%`, `[:` or `[#`. The `sql` protection only doubles `'`; handle
+Empty values skip the check. The inserted value loses `$`, `_dollar_`,
+`[%`, `<%`, `[:`, `[#`, `{#` and `#}`, and its ends are trimmed where they
+would form one of these with the template text. The `sql` protection only doubles `'`; handle
 backslash-sensitive databases in code. See `CLAUDE.md` → Typed
 Parameters for the full field reference.
 

@@ -406,7 +406,9 @@
         $pageBeforeParam = substr($result, 0, $fromPosition_);                       // page before the parameter
         $paramName = substr($paramName_, 1);
         if (substr($result, $EndPos, 2) === '[['
-          && ($ruleEndPos = strpos($result, ']]', $EndPos + 2)) !== false) {          // typed parameter $param[[type,default,protection]]
+          && ($ruleEndPos = strpos($result, ']]', $EndPos + 2)) !== false
+          && $ruleEndPos - $EndPos - 2 <= 255
+          && !preg_match('/[\r\n;$]/', substr($result, $EndPos + 2, $ruleEndPos - $EndPos - 2))) { // typed parameter $param[[type,default,protection]]
           $rule = $this->_parseTypedRule(substr($result, $EndPos + 2, $ruleEndPos - $EndPos - 2));
           $afterRule = $ruleEndPos + 2;
           $paramValue = Eisodos::$parameterHandler->getParam($paramName);
@@ -426,7 +428,9 @@
               }
             }
 
-            return $pageBeforeParam . $this->_applyTypedRule($paramName, $paramValue, $rule) . $pageAfterParam;
+            return $pageBeforeParam
+              . $this->_applyTypedRule($paramName, $paramValue, $rule, substr($pageBeforeParam, -1), substr($pageAfterParam, 0, 1))
+              . $pageAfterParam;
           }
         }
         if (substr(
@@ -545,7 +549,7 @@
      * @return string
      */
     private function _typedRuleRegex(string $type_): string {
-      return '/^(?:' . str_replace('/', '\/', $type_) . ')$/u';
+      return '/^(?:' . str_replace('/', '\/', $type_) . ')$/uD';
     }
 
     /**
@@ -562,7 +566,7 @@
         return true;
       }
       if ($type_ === 'numeric') {
-        return Eisodos::$utils->isInteger($value_, true) && $value_ !== '-';
+        return preg_match('/^-?\d+$/D', $value_) === 1;
       }
 
       return @preg_match($this->_typedRuleRegex($type_), $value_) === 1;
@@ -577,12 +581,48 @@
     private function _stripTemplateControl(string $value_): string {
       do {
         $previous = $value_;
-        $value_ = str_replace(['$', '[%', '<%', '[:', '[#'], '', $value_);
+        $value_ = str_replace(['$', '_dollar_', '[%', '<%', '[:', '[#', '{#', '#}'], '', $value_);
       } while ($value_ !== $previous);
 
       return $value_;
     }
 
+    /**
+     * Trims the ends of a typed parameter value where they would form a control sequence
+     * with the neighbouring template text ([ + %, < + %, { + # ...)
+     * @param string $paramName_ Parameter name
+     * @param string $value_ Parameter value
+     * @param string $before_ Last character before the parameter
+     * @param string $after_ First character after the parameter
+     * @return string
+     * @throws RuntimeException if a $ in the template would turn the value into a parameter name
+     */
+    private function _guardTypedBoundaries(string $paramName_, string $value_, string $before_, string $after_): string {
+      if ($before_ === '$' && preg_match('/^\w/', $value_)) {
+        throw new RuntimeException('Typed parameter directly after $ [' . $paramName_ . ']');
+      }
+      do {
+        $previous = $value_;
+        $value_ = match ($before_) {
+          '[' => ltrim($value_, '%:#'),
+          '<' => ltrim($value_, '%'),
+          '{' => ltrim($value_, '#'),
+          default => $value_
+        };
+        if (in_array($after_, ['%', ':', '#'], true)) {
+          $value_ = rtrim($value_, '[');
+        }
+        if ($after_ === '%') {
+          $value_ = rtrim($value_, '<');
+        }
+        if ($after_ === '#') {
+          $value_ = rtrim($value_, '{');
+        }
+      } while ($value_ !== $previous);
+      
+      return $value_;
+    }
+    
     /**
      * Escapes a typed parameter value for the given context
      * @param string $value_ Parameter value
@@ -612,12 +652,17 @@
      * @param string $paramName_ Parameter name
      * @param mixed $value_ Parameter value
      * @param array $rule_ Rule from _parseTypedRule()
+     * @param string $before_ Last character before the parameter
+     * @param string $after_ First character after the parameter
      * @return string Value to insert
      * @throws RuntimeException if the value is invalid and there is no default
      */
-    private function _applyTypedRule(string $paramName_, mixed $value_, array $rule_): string {
+    private function _applyTypedRule(string $paramName_, mixed $value_, array $rule_, string $before_ = '', string $after_ = ''): string {
       if ($this->_isTypedValueValid($value_, $rule_['type'])) {
-        return $this->_escapeTypedValue($this->_stripTemplateControl($value_), $rule_['protection']);
+        return $this->_escapeTypedValue(
+          $this->_guardTypedBoundaries($paramName_, $this->_stripTemplateControl($value_), $before_, $after_),
+          $rule_['protection']
+        );
       }
       if ($rule_['default'] === '') {
         throw new RuntimeException('Invalid parameter value [' . $paramName_ . ']');

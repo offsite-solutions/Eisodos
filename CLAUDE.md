@@ -339,8 +339,9 @@ $templateabs_header_main    <!-- Embed header.main.template -->
 | protection | empty, `sql` (doubles `'`; the template keeps the quotes), `html` (`htmlspecialchars`), `javascript` (escapes for a JS string literal) |
 
 - An empty value is always valid: the rule is skipped and `~='…';` applies as usual.
-- The value loses every `$`, `[%`, `<%`, `[:` and `[#`, so it can never start another substitution.
-- Write a literal comma in a regex as `\,` (`[0-9]{1\,3}`), and `]]` as `\x5D`.
+- The value loses every `$`, `_dollar_`, `[%`, `<%`, `[:`, `[#`, `{#` and `#}`. Its ends are trimmed where they would form one of these with the template text (`[` + `%`, `<` + `%`, `{` + `#`), so it can not start another substitution.
+- A `$` in the template directly before a typed parameter (`US$$price[[numeric]]`) throws `RuntimeException`; write `US_dollar_$price[[numeric]]`.
+- Write a literal comma in a regex as `\,` (`[0-9]{1\,3}`), `]]` as `\x5D`, `;` as `\x3B` and a literal `$` as `\x24`. A `[[…]]` that contains `;`, `$` or a line break, or is longer than 255 characters, is plain text, not a rule.
 
 ```html
 p_$currency[[HUF|EUR|USD,EUR]]
