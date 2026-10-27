@@ -405,6 +405,30 @@
       if ($EndPos > 0) {
         $pageBeforeParam = substr($result, 0, $fromPosition_);                       // page before the parameter
         $paramName = substr($paramName_, 1);
+        if (substr($result, $EndPos, 2) === '[['
+          && ($ruleEndPos = strpos($result, ']]', $EndPos + 2)) !== false) {          // typed parameter $param[[type,default,protection]]
+          $rule = $this->_parseTypedRule(substr($result, $EndPos + 2, $ruleEndPos - $EndPos - 2));
+          $afterRule = $ruleEndPos + 2;
+          $paramValue = Eisodos::$parameterHandler->getParam($paramName);
+          if (str_starts_with($paramName, 'template_')
+            || str_starts_with($paramName, 'templateabs_')
+            || str_starts_with($paramName, 'callback_')
+            || substr($result, $afterRule, 3) === ":='"
+            || $paramValue === '') {                                                   // rule is dropped, normal processing goes on
+            $result = substr($result, 0, $EndPos) . substr($result, $afterRule);
+          } else {
+            $pageAfterParam = substr($result, $afterRule);
+            if (str_starts_with($pageAfterParam, "~='")) {                             // default for empty value is not needed
+              $closingPos = strpos($pageAfterParam, "'", 3);
+              $pageAfterParam = ($closingPos === false) ? '' : substr($pageAfterParam, $closingPos + 1);
+              if (($pageAfterParam !== '') && ($pageAfterParam[0] === ';')) {
+                $pageAfterParam = substr($pageAfterParam, 1);
+              }
+            }
+
+            return $pageBeforeParam . $this->_applyTypedRule($paramName, $paramValue, $rule) . $pageAfterParam;
+          }
+        }
         if (substr(
             $result,
             $EndPos,
@@ -490,6 +514,84 @@
       return $result;
     }
     
+    /**
+     * Splits a typed parameter rule (type,default,protection) into its fields
+     * @param string $ruleText_ Text between [[ and ]], a literal comma is written as \,
+     * @return array ['type' => string, 'default' => string, 'protection' => string]
+     * @throws RuntimeException on unknown protection or invalid regex
+     */
+    private function _parseTypedRule(string $ruleText_): array {
+      $fields = array_map(
+        fn($field) => str_replace('\,', ',', $field),
+        preg_split('/(?<!\\\\),/', $ruleText_, 3)
+      );
+      $rule = [
+        'type' => Eisodos::$utils->safe_array_value($fields, 0),
+        'default' => Eisodos::$utils->safe_array_value($fields, 1),
+        'protection' => strtolower(Eisodos::$utils->safe_array_value($fields, 2))
+      ];
+      if (!in_array($rule['protection'], ['', 'sql', 'html', 'javascript'], true)
+        || (!in_array($rule['type'], ['', 'string', 'numeric'], true)
+          && @preg_match($this->_typedRuleRegex($rule['type']), '') === false)) {
+        throw new RuntimeException('Invalid typed parameter rule [' . $ruleText_ . ']');
+      }
+
+      return $rule;
+    }
+
+    /**
+     * Builds the anchored regex of a typed parameter rule
+     * @param string $type_ Regex without delimiters
+     * @return string
+     */
+    private function _typedRuleRegex(string $type_): string {
+      return '/^(?:' . str_replace('/', '\/', $type_) . ')$/u';
+    }
+
+    /**
+     * Checks a non-empty value against the type of a typed parameter rule
+     * @param mixed $value_ Parameter value
+     * @param string $type_ '', string, numeric or regex
+     * @return bool
+     */
+    private function _isTypedValueValid(mixed $value_, string $type_): bool {
+      if (is_array($value_)) {
+        return false;
+      }
+      if ($type_ === '' || $type_ === 'string') {
+        return true;
+      }
+      if ($type_ === 'numeric') {
+        return Eisodos::$utils->isInteger($value_, true) && $value_ !== '-';
+      }
+
+      return @preg_match($this->_typedRuleRegex($type_), $value_) === 1;
+    }
+
+    /**
+     * Validates a non-empty value of a typed parameter
+     * @param string $paramName_ Parameter name
+     * @param mixed $value_ Parameter value
+     * @param array $rule_ Rule from _parseTypedRule()
+     * @return string Value to insert
+     * @throws RuntimeException if the value is invalid and there is no default
+     */
+    private function _applyTypedRule(string $paramName_, mixed $value_, array $rule_): string {
+      if ($this->_isTypedValueValid($value_, $rule_['type'])) {
+        return $value_;
+      }
+      if ($rule_['default'] === '') {
+        throw new RuntimeException('Invalid parameter value [' . $paramName_ . ']');
+      }
+      Eisodos::$logger->debug('Invalid parameter value [' . $paramName_ . ']=[' . (is_array($value_) ? 'Array' : $value_) . ']');
+      $parameter = Eisodos::$utils->safe_array_value(Eisodos::$parameterHandler->getParameterArray(), strtolower($paramName_));
+      if (!is_array($parameter) || !Eisodos::$utils->safe_array_value($parameter, 'readonly')) {         // readonly parameters keep their value
+        Eisodos::$parameterHandler->setParam($paramName_, $rule_['default'], false, false, 'eisodos::templateEngine');
+      }
+
+      return $rule_['default'];
+    }
+
     /**
      * Replace all parameters in a string
      * @param string $text_ Text to search for parameters
