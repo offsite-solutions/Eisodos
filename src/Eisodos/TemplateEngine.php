@@ -569,6 +569,45 @@
     }
 
     /**
+     * Removes template control sequences from a typed parameter value, so the inserted text
+     * can not be expanded again by parse() or by the final replace in Render
+     * @param string $value_ Parameter value
+     * @return string
+     */
+    private function _stripTemplateControl(string $value_): string {
+      do {
+        $previous = $value_;
+        $value_ = str_replace(['$', '[%', '<%', '[:', '[#'], '', $value_);
+      } while ($value_ !== $previous);
+
+      return $value_;
+    }
+
+    /**
+     * Escapes a typed parameter value for the given context
+     * @param string $value_ Parameter value
+     * @param string $protection_ '', sql, html or javascript
+     * @return string
+     */
+    private function _escapeTypedValue(string $value_, string $protection_): string {
+      return match ($protection_) {
+        'sql' => str_replace("'", "''", $value_),
+        'html' => htmlspecialchars($value_, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
+        'javascript' => strtr($value_, [                                               // strtr replaces each sequence once, \ included
+          '\\' => '\\\\',
+          "'" => "\\'",
+          '"' => '\\"',
+          "\n" => '\\n',
+          "\r" => '\\r',
+          "\u{2028}" => '\\u2028',
+          "\u{2029}" => '\\u2029',
+          '</' => '<\\/'
+        ]),
+        default => $value_
+      };
+    }
+
+    /**
      * Validates a non-empty value of a typed parameter
      * @param string $paramName_ Parameter name
      * @param mixed $value_ Parameter value
@@ -578,7 +617,7 @@
      */
     private function _applyTypedRule(string $paramName_, mixed $value_, array $rule_): string {
       if ($this->_isTypedValueValid($value_, $rule_['type'])) {
-        return $value_;
+        return $this->_escapeTypedValue($this->_stripTemplateControl($value_), $rule_['protection']);
       }
       if ($rule_['default'] === '') {
         throw new RuntimeException('Invalid parameter value [' . $paramName_ . ']');

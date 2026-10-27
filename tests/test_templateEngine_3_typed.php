@@ -100,6 +100,27 @@
     check('template_ ignores rule', render('$template_test1embed'), render('$template_test1embed[[numeric]]'));
     check('no rule unchanged', 'abc', render('$csop'));
     
+    // control sequence stripping and escaping
+    visitor('csop', "a'b");
+    check('sql escape', "where csopids='a''b'", render("where csopids='\$csop[[string,,sql]]~='DEFAULT';'"));
+    visitor('param', "abc'de");
+    check('js escape', "let param='abc\\'de'", render("let param='\$param[[,,javascript]]'"));
+    visitor('param', "a\\b\"c\nd</script>\u{2028}");
+    check('js escape full', 'a\\\\b\\"c\\nd<\\/script>\\u2028', render('$param[[,,javascript]]'));
+    visitor('nev', '<b>"x"</b>');
+    check('html escape', '&lt;b&gt;&quot;x&quot;&lt;/b&gt;', render('$nev[[,,html]]'));
+
+    Eisodos::$parameterHandler->setParam('dbpassword', 'SECRET');
+    visitor('x', 'a$dbpassword');
+    check('dollar stripped', "'adbpassword'", render("'\$x[[,,sql]]'"));
+    visitor('nev', '[%funcjob=eq%]');
+    check('callback opener stripped', '<div>funcjob=eq%]</div>', render('<div>$nev[[,,html]]</div>'));
+    visitor('nev', '[[%%]<<%%>$$a[[::]');
+    check('nested openers stripped', ']>a]', render('$nev[[]]'));
+    check('nested: no opener left', '0', (string)preg_match('/\$|\[%|<%|\[:|\[#/', render('$nev[[]]')));
+    visitor('m', 'bad');
+    check('default is not escaped', "it's", render('$m[[HUF|EUR,it\'s,sql]]'));
+    
   } catch (Exception $e) {
     if (!isset(Eisodos::$logger)) {
       die($e->getMessage());

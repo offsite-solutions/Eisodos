@@ -23,6 +23,7 @@ php tests/test_configLoader_JSON.php
 php tests/test_configLoader_INI_environment.php
 php tests/test_templateEngine_1.php
 php tests/test_templateEngine_2_callbacks.php
+php tests/test_templateEngine_3_typed.php
 ```
 
 ## Architecture
@@ -321,9 +322,31 @@ Eisodos::$parameterHandler->setParam('current', '^default_lang');
 ```html
 $parameterName              <!-- Parameter reference -->
 $param~='default';          <!-- With default value -->
+$param[[numeric,0,sql]]     <!-- Typed: validated, stripped, escaped -->
 $templateabs_header_main    <!-- Embed header.main.template -->
 [:LANG_ID,default:]         <!-- Language translation -->
 ##comment line              <!-- Removed in output -->
+```
+
+### Typed Parameters
+
+`$param[[type,default,protection]]` validates and escapes a visitor-supplied value where it is inserted. All three fields are optional; trailing empty fields can be omitted (`[[numeric]]`, `[[HUF|EUR|USD,EUR]]`, `[[,,javascript]]`).
+
+| Field | Values |
+| --- | --- |
+| type | empty or `string` (any value), `numeric` (integer, as in `.params`), or a regex without delimiters, matched against the whole value |
+| default | Used and stored in the parameter when a non-empty value fails the type check. Without a default, the check throws `RuntimeException`. |
+| protection | empty, `sql` (doubles `'`; the template keeps the quotes), `html` (`htmlspecialchars`), `javascript` (escapes for a JS string literal) |
+
+- An empty value is always valid: the rule is skipped and `~='…';` applies as usual.
+- The value loses every `$`, `[%`, `<%`, `[:` and `[#`, so it can never start another substitution.
+- Write a literal comma in a regex as `\,` (`[0-9]{1\,3}`), and `]]` as `\x5D`.
+
+```html
+p_$currency[[HUF|EUR|USD,EUR]]
+where muid=$muid[[numeric]]
+where csopids='$csopids[[string,,sql]]~='DEFAULT';'
+let param='$param[[,,javascript]]';
 ```
 
 ### Callback Functions

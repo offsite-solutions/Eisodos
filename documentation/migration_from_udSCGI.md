@@ -1459,6 +1459,22 @@ files udSCGI used.
 | `{# urlencoded text #}` | URL-decoded block (legacy `_changeEncode`). |
 | `\{` / `\}` | Escaped `{` / `}`. |
 
+**Typed parameters.** `$param[[type,default,protection]]` validates and
+escapes a visitor-supplied value at the point of insertion, so many
+`.params` regex rules can move into the template:
+
+```html
+p_$currency[[HUF|EUR|USD,EUR]]                     <!-- invalid -> EUR, also stored -->
+where muid=$muid[[numeric]]                        <!-- invalid -> RuntimeException -->
+where csopids='$csopids[[string,,sql]]~='DEFAULT';' <!-- ' doubled; empty -> DEFAULT -->
+let param='$param[[,,javascript]]';                <!-- abc'de -> abc\'de -->
+```
+
+Empty values skip the check. The inserted value never contains `$`,
+`[%`, `<%`, `[:` or `[#`. The `sql` protection only doubles `'`; handle
+backslash-sensitive databases in code. See `CLAUDE.md` → Typed
+Parameters for the full field reference.
+
 Active-version-aware template names (`header.v3.template`, etc.) are
 supported via the `ActiveVersions` config key — see §17.
 
