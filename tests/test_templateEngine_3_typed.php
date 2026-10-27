@@ -83,6 +83,7 @@
     check('escaped comma in regex', '123', render('$n[[[0-9]{1\,3},0]]'));
     visitor('p', 'a/b');
     check('slash in regex', 'a/b', render('$p[[a/b]]'));
+    check('author-escaped slash in regex', 'a/b', render('$p[[a\/b]]'));
 
     visitor('arr', 'v');
     check('unclosed rule is untouched', 'v[[0]', render('$arr[[0]'));
@@ -119,7 +120,16 @@
     check('nested openers stripped', ']>a]', render('$nev[[]]'));
     check('nested: no opener left', '0', (string)preg_match('/\$|\[%|<%|\[:|\[#/', render('$nev[[]]')));
     visitor('m', 'bad');
-    check('default is not escaped', "it's", render('$m[[HUF|EUR,it\'s,sql]]'));
+    check('default is escaped for sql', "it''s", render('$m[[HUF|EUR,it\'s,sql]]'));
+    check('default is escaped for html', '&lt;b&gt;', render('$m[[numeric,<b>,html]]'));
+    
+    Eisodos::$logger->setDebugLevels('debug');
+    visitor('m', "bad\ninjected");
+    ob_start();                                                      // in CLI mode the logger echoes its lines
+    render('$m[[numeric,0]]');
+    $logLines = array_values(array_filter(explode(PHP_EOL, ob_get_clean()), fn($line) => str_contains($line, 'Invalid parameter value [m]')));
+    check('invalid value logged on one line', '1', (string)(count($logLines) === 1 && str_contains($logLines[0], 'bad\ninjected') && !str_contains($logLines[0], "bad\ninjected")));
+    Eisodos::$logger->setDebugLevels('error');
     
     // review fixes: final-pass markers, value boundaries, anchoring, unclosed rules
     visitor('e', '{#%24dbpassword#}');

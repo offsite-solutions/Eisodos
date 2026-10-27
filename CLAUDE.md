@@ -335,7 +335,7 @@ $templateabs_header_main    <!-- Embed header.main.template -->
 | Field | Values |
 | --- | --- |
 | type | empty or `string` (any value), `numeric` (integer, as in `.params`), or a regex without delimiters, matched against the whole value |
-| default | Used and stored in the parameter when a non-empty value fails the type check. Without a default, the check throws `RuntimeException`. |
+| default | Used and stored in the parameter when a non-empty value fails the type check; inserted with the same protection as the value. Without a default, the check throws `RuntimeException`. |
 | protection | empty, `sql` (doubles `'`; the template keeps the quotes), `html` (`htmlspecialchars`), `javascript` (escapes for a JS string literal) |
 
 - An empty value is always valid: the rule is skipped and `~='…';` applies as usual.

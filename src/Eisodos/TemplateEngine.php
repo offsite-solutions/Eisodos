@@ -20,6 +20,11 @@
      */
     private array $_templateCache = [];
     
+    /**
+     * @var array Parsed typed parameter rules, keyed by rule text
+     */
+    private array $_typedRuleCache = [];
+    
     // Public properties
     /**
      * Registered template block parsers
@@ -525,6 +530,9 @@
      * @throws RuntimeException on unknown protection or invalid regex
      */
     private function _parseTypedRule(string $ruleText_): array {
+      if (array_key_exists($ruleText_, $this->_typedRuleCache)) {
+        return $this->_typedRuleCache[$ruleText_];
+      }
       $fields = array_map(
         fn($field) => str_replace('\,', ',', $field),
         preg_split('/(?<!\\\\),/', $ruleText_, 3)
@@ -539,6 +547,7 @@
           && @preg_match($this->_typedRuleRegex($rule['type']), '') === false)) {
         throw new RuntimeException('Invalid typed parameter rule [' . $ruleText_ . ']');
       }
+      $this->_typedRuleCache[$ruleText_] = $rule;
 
       return $rule;
     }
@@ -549,7 +558,7 @@
      * @return string
      */
     private function _typedRuleRegex(string $type_): string {
-      return '/^(?:' . str_replace('/', '\/', $type_) . ')$/uD';
+      return '/^(?:' . preg_replace('~\\\\.(*SKIP)(*FAIL)|/~', '\/', $type_) . ')$/uD'; // escapes only unescaped slashes
     }
 
     /**
@@ -667,13 +676,14 @@
       if ($rule_['default'] === '') {
         throw new RuntimeException('Invalid parameter value [' . $paramName_ . ']');
       }
-      Eisodos::$logger->debug('Invalid parameter value [' . $paramName_ . ']=[' . (is_array($value_) ? 'Array' : $value_) . ']');
+      Eisodos::$logger->debug('Invalid parameter value [' . $paramName_ . ']=['
+        . (is_array($value_) ? 'Array' : str_replace(["\r", "\n"], ['\r', '\n'], $value_)) . ']');
       $parameter = Eisodos::$utils->safe_array_value(Eisodos::$parameterHandler->getParameterArray(), strtolower($paramName_));
       if (!is_array($parameter) || !Eisodos::$utils->safe_array_value($parameter, 'readonly')) {         // readonly parameters keep their value
         Eisodos::$parameterHandler->setParam($paramName_, $rule_['default'], false, false, 'eisodos::templateEngine');
       }
 
-      return $rule_['default'];
+      return $this->_escapeTypedValue($rule_['default'], $rule_['protection']);
     }
 
     /**
