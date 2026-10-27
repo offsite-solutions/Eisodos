@@ -414,7 +414,7 @@
           $paramValue = substr($pageAfterParam, 0, strpos($pageAfterParam, "'"));        // value
           Eisodos::$parameterHandler->setParam($paramName, $paramValue);
           $pageAfterParam = substr($result, $EndPos + 3 + strlen($paramValue) + 1);
-          if (($pageAfterParam !== '') && ($pageAfterParam[0] = ';')) {                      // if there is closing ; (it must be) then cut it
+          if (($pageAfterParam !== '') && ($pageAfterParam[0] === ';')) {                      // if there is closing ; (it must be) then cut it
             $pageAfterParam = substr($pageAfterParam, 1);
           }
           $result = $pageBeforeParam . $pageAfterParam;
@@ -422,7 +422,7 @@
           $pageAfterParam = substr($result, $EndPos + 3);
           $paramDefaultValue = substr($pageAfterParam, 0, strpos($pageAfterParam, "'"));
           $pageAfterParam = substr($result, $EndPos + 3 + strlen($paramDefaultValue) + 1);
-          if (($pageAfterParam !== '') && ($pageAfterParam[0] = ';')) {
+          if (($pageAfterParam !== '') && ($pageAfterParam[0] === ';')) {
             $pageAfterParam = substr($pageAfterParam, 1);
           }
           if (($paramValue = Eisodos::$parameterHandler->getParam($paramName)) === '') {
