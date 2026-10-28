@@ -676,9 +676,10 @@
       if ($rule_['default'] === '') {
         throw new RuntimeException('Invalid parameter value [' . $paramName_ . ']');
       }
-      Eisodos::$logger->debug('Invalid parameter value [' . $paramName_ . ']=['
-        . (is_array($value_) ? 'Array' : str_replace(["\r", "\n"], ['\r', '\n'], $value_)) . ']');
       $parameter = Eisodos::$utils->safe_array_value(Eisodos::$parameterHandler->getParameterArray(), strtolower($paramName_));
+      Eisodos::$logger->debug('Invalid parameter value [' . $paramName_ . ']=['
+        . (is_array($parameter) && Eisodos::$utils->safe_array_value($parameter, 'secret') ? '***'
+          : (is_array($value_) ? 'Array' : str_replace(["\r", "\n"], ['\r', '\n'], $value_))) . ']');
       if (!is_array($parameter) || !Eisodos::$utils->safe_array_value($parameter, 'readonly')) {         // readonly parameters keep their value
         Eisodos::$parameterHandler->setParam($paramName_, $rule_['default'], false, false, 'eisodos::templateEngine');
       }

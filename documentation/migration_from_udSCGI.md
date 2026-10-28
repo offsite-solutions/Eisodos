@@ -892,6 +892,15 @@ Variable substitution available in values:
 URL parameters cannot override it. Use this for every security-sensitive
 or hard-to-rotate value (log paths, template dir, app URLs).
 
+`-SimplePay.SecretKey=...` — the leading dash marks the parameter
+**secret**: readonly like the dot, and the error log, the error mail and
+the debug log show `***` instead of its value. Templates and code use it
+as usual (`$simplepay.secretkey`, `getParam('SimplePay.SecretKey')`).
+Use it for passwords, API keys and tokens. The mark sticks: a later
+include that sets the key without the dash keeps it secret. Code can set
+one with `setParam('-name', ...)`; a dash in a request, cookie or session
+parameter name is not a mark.
+
 ### 5.3 Real-world examples
 
 **drp-v2 dev** (`/Users/baxi/Work/drp-v2/sites/dev/drp/config/dev-drp.conf`):
@@ -2473,7 +2482,8 @@ Docker mounts. Quick rule:
       shared `global.conf` / `i18n.conf` etc.
     - Move DB connection info into a `[Database]` section in the
       connector-specific format (§7.1).
-    - Mark sensitive keys readonly with a leading `.`.
+    - Mark sensitive keys readonly with a leading `.`, and passwords,
+      API keys and tokens secret with a leading `-`.
     - If using `_init_parameters.php`: ensure `HU.DATEFORMAT=...`,
       `HU.JSDATEFORMAT=...`, `HU.PHPDATEFORMAT=...` (and equivalents
       per language in `Langs=`) are present — see §4.5.
@@ -2582,7 +2592,8 @@ Docker mounts. Quick rule:
 2. **Readonly config keys.** udSCGI silently allowed query-string
    parameters to override config values. In Eisodos, prefix the key
    with `.` (e.g. `.ErrorLog=...`) or an attacker can redirect logs
-   via `?errorlog=...`.
+   via `?errorlog=...`. Prefix passwords, API keys and tokens with `-`
+   instead: readonly too, and the error log and mail mask their value.
 
 3. **`D_copy` is 1-indexed**, PHP `substr` is 0-indexed. When porting
    tight string code, this is the most common off-by-one source.

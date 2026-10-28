@@ -138,7 +138,7 @@
           '<td style="' . $td . 'font-weight:bold;word-break:break-all;">' . $h($row['name']) . '</td>' .
           '<td style="' . $td . 'word-break:break-all;">' . $h($row['value']) . '</td>' .
           '<td style="' . $td . 'color:#57606a;word-break:break-all;">' . $h(str_replace(';', '; ', $row['source'])) . '</td>' .
-          '<td style="' . $td . 'color:#57606a;white-space:nowrap;">' . $h(trim($row['flag'] . ($row['readonly'] ? ' ro' : ''))) . '</td>' .
+          '<td style="' . $td . 'color:#57606a;white-space:nowrap;">' . $h(trim($row['flag'] . ($row['readonly'] ? ' ro' : '') . ($row['secret'] ? ' secret' : ''))) . '</td>' .
           '</tr>';
       }
       $st .= $section(

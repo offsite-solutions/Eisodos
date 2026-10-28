@@ -21,6 +21,7 @@ Tests are located in `tests/` and are standalone PHP scripts (no PHPUnit):
 php tests/test_configLoader_INI.php
 php tests/test_configLoader_JSON.php
 php tests/test_configLoader_INI_environment.php
+php tests/test_parameterHandler_secret.php
 php tests/test_templateEngine_1.php
 php tests/test_templateEngine_2_callbacks.php
 php tests/test_templateEngine_3_typed.php
@@ -267,6 +268,8 @@ Key sections:
 - `[Env]` — Environment variables to set
 
 **Readonly parameters**: prefix with `.` to prevent HTTP-parameter override (e.g., `.ErrorLog`, `.TemplateDir`). Without the dot, an attacker can redirect logs via `?errorlog=...`.
+
+**Secret parameters**: prefix with `-` (e.g., `-SimplePay.SecretKey`, or `setParam('-api_token', ...)` in code). A secret is readonly, and the error log, the error mail and the typed-parameter debug message show `***` instead of its value. Templates and `getParam()` use it as usual. The mark sticks when the key is set again without the dash. A dash in a request, cookie or session parameter name is not a mark. `getParameterArray()` still returns raw values.
 
 **Always PreInclude the shipped defaults.** `common_pre_{dev,test,live}.conf` lives under `vendor/offsite-solutions/eisodos/src/Eisodos/config/` and sets sensible defaults for `EnableInlineCallback`, `DebugMessages`, `ShowMissingTemplate`, `TitleString`, etc. Don't duplicate those keys in your per-app file — rely on the include.
 

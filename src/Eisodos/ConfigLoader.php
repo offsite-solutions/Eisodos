@@ -330,7 +330,7 @@
       foreach ($L as $key => $val) {
         // add imported key values to the parameterHandler by replacing variables in the values
         $val = (str_contains($val, '$') ? Eisodos::$templateEngine->replaceParamInString($val) : $val);
-        // if key starts with a minus, then make it readonly
+        // a leading . (readonly) or - (readonly and secret) is handled by setParam
         if ($addToParameters_) {
           Eisodos::$parameterHandler->setParam(
             $key,

@@ -299,7 +299,9 @@
     
     /**
      * Add parameter to the parameter's array
-     * If parameter name starts with !, then it will readonly
+     * If parameter name starts with ., then it will be readonly
+     * If parameter name starts with -, then it will be readonly and secret: its value never gets to the logs.
+     * The secret mark sticks, and visitor-supplied names (request, cookie, session) can not set it.
      * @param string $parameterName_ Parameter's name
      * @param mixed $value_ Parameter's value
      * @param bool $sessionStored_ If true the parameter will be stored in the session variables
@@ -317,9 +319,16 @@
         return;
       }
       $parameterName_ = strtolower($parameterName_);
+      // values supplied by the visitor (request, cookie, session); both switches default to F
+      $fromVisitor = in_array($source_, ['request', 'cookie', 'session'], true);
+      $secret = false;
       if ($parameterName_[0] === '.') {
         $parameterName_ = substr($parameterName_, 1);
         $readOnly = true;
+      } elseif ($parameterName_[0] === '-' && !$fromVisitor && strlen($parameterName_) > 1) {
+        $parameterName_ = substr($parameterName_, 1);
+        $readOnly = true;
+        $secret = true;
       } else {
         $readOnly = false;
       }
@@ -329,8 +338,6 @@
       if (!is_array($value_)) {
         $value_ = (string)$value_;
       }
-      // values supplied by the visitor (request, cookie, session); both switches default to F
-      $fromVisitor = in_array($source_, ['request', 'cookie', 'session'], true);
       if ($fromVisitor && $this->isOn('SANITIZEINPUTPARAMS')) {
         $value_ = $this->_neutralizeTemplateSyntax($value_);
       }
@@ -344,7 +351,9 @@
         } else {
           $this->_params[$parameterName_]['value'] = $value_;
         }
-        $this->_params[$parameterName_]['readonly'] = $readOnly;
+        $secret = $secret || ($this->_params[$parameterName_]['secret'] ?? false);
+        $this->_params[$parameterName_]['readonly'] = $readOnly || $secret;
+        $this->_params[$parameterName_]['secret'] = $secret;
         if (isset($this->_params[$parameterName_]['flag'])) {
           if (($this->_params[$parameterName_]['flag'] === '') && ($sessionStored_)) {
             $this->_params[$parameterName_]['flag'] = 's';
@@ -363,7 +372,8 @@
         }
         $this->_params[$parameterName_]['source'] = ((isset($this->_params[$parameterName_]['source']) && $this->_params[$parameterName_]['source'] !== '') ? $this->_params[$parameterName_]['source'] . ';' : '') . $source_;
       } else {
-        Eisodos::$logger->error('Parameter ' . $parameterName_ . ' overwrite is forbidden to ' . $value_);
+        Eisodos::$logger->error('Parameter ' . $parameterName_ . ' overwrite is forbidden to '
+          . (($this->_params[$parameterName_]['secret'] ?? false) ? '***' : (is_array($value_) ? implode(',', $value_) : $value_)));
       }
     }
     
@@ -854,14 +864,17 @@
     
     /**
      * Collects the parameters to log, one row per parameter
-     * @return array List of ['source', 'flag', 'readonly', 'name', 'value'] rows; values are cut at 255 characters
+     * @return array List of ['source', 'flag', 'readonly', 'secret', 'name', 'value'] rows; values are cut at 255 characters,
+     * secret values are replaced with ***
      */
     public function params2logRows(): array {
       $rows = [];
       $needConfig=!Eisodos::$parameterHandler->isOff('ErrorIncludeConfigToLog');
       foreach ($this->_params as $key => $value) {
         if ($needConfig || !str_contains($value['source'], ':config')) {
-          if (is_array($value['value'])) {
+          if ($value['secret'] ?? false) {
+            $valueToLog = '***';
+          } elseif (is_array($value['value'])) {
             $valueToLog = implode(',', $value['value']);
           } else {
             $valueToLog = $value['value'];
@@ -870,6 +883,7 @@
             'source' => $value['source'],
             'flag' => $value['flag'],
             'readonly' => $value['readonly'],
+            'secret' => $value['secret'] ?? false,
             'name' => $key,
             'value' => (strlen($valueToLog) > 255 ? substr($valueToLog, 0, 255) . '...' : $valueToLog)
           ];
@@ -890,6 +904,7 @@
           ($row['source'] === '' ? '' : '[' . $row['source'] . '] ') .
           ($row['flag'] === '' ? '' : '(' . $row['flag'] . ') ') .
           ($row['readonly'] ? '(ro) ' : '') .
+          ($row['secret'] ? '(secret) ' : '') .
           $row['name'] . '=' . $row['value'] .
           "\n";
       }
