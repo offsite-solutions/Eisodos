@@ -74,7 +74,102 @@
       
       return $st;
     }
-    
+
+    /**
+     * Generates the error log as a formatted HTML mail body (ErrorLogMailFormat=html)
+     * Styles are inline because most mail clients drop the <style> block
+     * @param Throwable|null $throwable_
+     * @param string $debugInformation_
+     * @return string
+     */
+    private function _generateHtmlMailLog(?Throwable $throwable_, string $debugInformation_ = ''): string {
+      $h = static fn(string $s): string => htmlspecialchars($s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+      $mono = "font-family:Consolas,'Courier New',monospace;font-size:12px;";
+      $pre = 'margin:0;padding:10px;background:#f6f8fa;border:1px solid #e1e4e8;border-radius:4px;white-space:pre-wrap;word-break:break-all;' . $mono;
+      $th = 'text-align:left;padding:4px 8px;background:#f0f2f4;border-bottom:1px solid #d0d7de;font-size:12px;color:#57606a;';
+      $td = 'padding:3px 8px;border-bottom:1px solid #eaeef2;vertical-align:top;' . $mono;
+
+      $section = static fn(string $title, string $content): string => '<tr><td style="padding:16px 24px 0 24px;">' .
+        '<div style="font-size:13px;font-weight:bold;color:#24292f;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;">' .
+        $h($title) . '</div>' . $content . '</td></tr>';
+
+      $st = '<!DOCTYPE html><html lang="en"><head><meta content="text/html; charset=utf-8" http-equiv="Content-Type" />' .
+        '<title>' . $h(Eisodos::$applicationName) . ' error</title></head>' .
+        '<body style="margin:0;padding:16px;background:#eef0f3;font-family:Arial,Helvetica,sans-serif;color:#24292f;">' .
+        '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:1000px;margin:0 auto;background:#ffffff;border:1px solid #d0d7de;border-radius:6px;border-collapse:separate;">';
+
+      $st .= '<tr><td style="padding:16px 24px;background:#b42318;color:#ffffff;border-radius:6px 6px 0 0;">' .
+        '<div style="font-size:20px;font-weight:bold;">' . $h(Eisodos::$applicationName) . ' error</div>' .
+        '<div style="font-size:13px;opacity:.9;margin-top:4px;">' . $h(date('Y.m.d. H:i:s')) .
+        (array_key_exists('HTTP_HOST', $_SERVER) ? ' &middot; ' . $h($_SERVER['HTTP_HOST']) : '') . '</div></td></tr>';
+
+      if ($throwable_) {
+        $st .= $section(
+          'Error',
+          '<div style="padding:10px 12px;background:#fef3f2;border-left:4px solid #b42318;font-size:14px;font-weight:bold;white-space:pre-wrap;">' .
+          $h($throwable_->getMessage()) . '</div>' .
+          '<div style="margin-top:6px;font-size:12px;color:#57606a;' . $mono . '">' .
+          $h(get_class($throwable_)) . ' in ' . $h($throwable_->getFile()) . ' at line ' . $throwable_->getLine() . '</div>'
+        );
+        $st .= $section('Stack trace', '<pre style="' . $pre . '">' . $h($throwable_->getTraceAsString()) . '</pre>');
+      }
+
+      $extendedError = Eisodos::$utils->safe_array_value($_POST, '__EISODOS_extendedError');
+      if ($extendedError !== '') {
+        $st .= $section('Extended error', '<pre style="' . $pre . '">' . $h($extendedError) . '</pre>');
+      }
+
+      if (array_key_exists('REQUEST_URI', $_SERVER)) {
+        $st .= $section(
+          'URL',
+          '<div style="' . $mono . 'word-break:break-all;">' .
+          (array_key_exists('REQUEST_METHOD', $_SERVER) ? '<b>' . $h($_SERVER['REQUEST_METHOD']) . '</b> ' : '') .
+          $h($_SERVER['REQUEST_URI']) . '</div>'
+        );
+      }
+
+      if ($debugInformation_ !== '') {
+        $st .= $section('Extended info', '<pre style="' . $pre . '">' . $h($debugInformation_) . '</pre>');
+      }
+
+      $rows = '';
+      foreach (Eisodos::$parameterHandler->params2logRows() as $row) {
+        $rows .= '<tr>' .
+          '<td style="' . $td . 'font-weight:bold;word-break:break-all;">' . $h($row['name']) . '</td>' .
+          '<td style="' . $td . 'word-break:break-all;">' . $h($row['value']) . '</td>' .
+          '<td style="' . $td . 'color:#57606a;word-break:break-all;">' . $h(str_replace(';', '; ', $row['source'])) . '</td>' .
+          '<td style="' . $td . 'color:#57606a;white-space:nowrap;">' . $h(trim($row['flag'] . ($row['readonly'] ? ' ro' : ''))) . '</td>' .
+          '</tr>';
+      }
+      $st .= $section(
+        'Parameters',
+        '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid #d0d7de;table-layout:fixed;">' .
+        '<tr><th width="22%" style="' . $th . '">Name</th><th width="48%" style="' . $th . '">Value</th><th width="22%" style="' . $th . '">Source</th><th width="8%" style="' . $th . '">Flags</th></tr>' .
+        $rows . '</table>'
+      );
+
+      $rows = '';
+      foreach (Eisodos::$utils->get_request_headers() as $key => $value) {
+        $rows .= '<tr>' .
+          '<td style="' . $td . 'font-weight:bold;word-break:break-all;">' . $h((string)$key) . '</td>' .
+          '<td style="' . $td . 'word-break:break-all;">' . $h((string)$value) . '</td>' .
+          '</tr>';
+      }
+      if ($rows !== '') {
+        $st .= $section(
+          'Headers',
+          '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid #d0d7de;table-layout:fixed;">' .
+          '<tr><th width="25%" style="' . $th . '">Name</th><th width="75%" style="' . $th . '">Value</th></tr>' .
+          $rows . '</table>'
+        );
+      }
+
+      $st .= '<tr><td style="padding:16px 24px;font-size:11px;color:#8c959f;">Eisodos error report</td></tr>';
+      $st .= '</table></body></html>';
+
+      return $st;
+    }
+
     /**
      * Step trace counter forward
      * @return int
@@ -230,13 +325,18 @@
           && str_contains(Eisodos::$parameterHandler->getParam('ERROROUTPUT'), 'Mail')) {
           $extraMails = $extraMails_;
           $extraMails[] = Eisodos::$parameterHandler->getParam('ERRORMAILTO');
+          if (strtolower(Eisodos::$parameterHandler->getParam('ErrorLogMailFormat', 'html')) === 'text') {
+            $mailBody = '<html lang="en"><meta content="text/html; charset=utf-8" http-equiv="Content-Type" /><body><pre>' . htmlspecialchars(
+                $errorString
+              ) . '</pre></body></html>';
+          } else {
+            $mailBody = $this->_generateHtmlMailLog($throwable_, $debugInformation_);
+          }
           foreach ($extraMails as $row) {
             Eisodos::$mailer->sendMail(
               $row,
               Eisodos::$parameterHandler->getParam('ERRORMAILSUBJECT',Eisodos::$applicationName . ' error'),
-              '<html lang="en"><meta content="text/html; charset=utf-8" http-equiv="Content-Type" /><body><pre>' . htmlspecialchars(
-                $errorString
-              ) . '</pre></body></html>',
+              $mailBody,
               Eisodos::$parameterHandler->getParam('ERRORMAILFROM')
             );
           }

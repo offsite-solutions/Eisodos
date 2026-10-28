@@ -1814,6 +1814,7 @@ Identical to udSCGI for the user-visible bits:
 | `ErrorMailTo=a@b,c@d` | Recipient list for `Mail` channel. |
 | `ErrorMailFrom=...` | Sender. |
 | `ErrorMailSubject=...` | Subject line; configurable (commit `22b5ffd`). |
+| `ErrorLogMailFormat=html\|text` | Error mail body. `html` (default): formatted report with the error, stack trace, URL, and parameter and header tables. `text`: the file log inside `<pre>`, as before. Other log outputs do not change. |
 | `DebugMessages=T/F` | Enable `Eisodos::$logger->debug` and friends in output. |
 | `DebugExceptions=T/F` | Catch all exceptions through `writeErrorLog`. |
 | `DebugErrors=T/F` | Convert PHP errors to log entries. |
@@ -1911,6 +1912,7 @@ It reads SMTP settings from `[Config]` keys:
 Error mail (when `ErrorOutput=Mail`) uses `ErrorMailFrom`,
 `ErrorMailTo`, `ErrorMailSubject`. Pass extra one-off recipients as
 the third argument to `writeErrorLog`.
+`ErrorLogMailFormat=text` switches the body back to the plain log.
 
 ---
 

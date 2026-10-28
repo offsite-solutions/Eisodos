@@ -853,11 +853,11 @@
     }
     
     /**
-     * Generates a concatenated string from the parameters array
-     * @return string
+     * Collects the parameters to log, one row per parameter
+     * @return array List of ['source', 'flag', 'readonly', 'name', 'value'] rows; values are cut at 255 characters
      */
-    public function params2log(): string {
-      $st = '';
+    public function params2logRows(): array {
+      $rows = [];
       $needConfig=!Eisodos::$parameterHandler->isOff('ErrorIncludeConfigToLog');
       foreach ($this->_params as $key => $value) {
         if ($needConfig || !str_contains($value['source'], ':config')) {
@@ -866,13 +866,32 @@
           } else {
             $valueToLog = $value['value'];
           }
-          $st .=
-            ($value['source'] === '' ? '' : '[' . $value['source'] . '] ') .
-            ($value['flag'] === '' ? '' : '(' . $value['flag'] . ') ') .
-            ($value['readonly'] ? '(ro) ' : '') .
-            $key . '=' . (strlen($valueToLog) > 255 ? substr($valueToLog, 0, 255) . '...' : $valueToLog) .
-            "\n";
+          $rows[] = [
+            'source' => $value['source'],
+            'flag' => $value['flag'],
+            'readonly' => $value['readonly'],
+            'name' => $key,
+            'value' => (strlen($valueToLog) > 255 ? substr($valueToLog, 0, 255) . '...' : $valueToLog)
+          ];
         }
+      }
+      
+      return $rows;
+    }
+    
+    /**
+     * Generates a concatenated string from the parameters array
+     * @return string
+     */
+    public function params2log(): string {
+      $st = '';
+      foreach ($this->params2logRows() as $row) {
+        $st .=
+          ($row['source'] === '' ? '' : '[' . $row['source'] . '] ') .
+          ($row['flag'] === '' ? '' : '(' . $row['flag'] . ') ') .
+          ($row['readonly'] ? '(ro) ' : '') .
+          $row['name'] . '=' . $row['value'] .
+          "\n";
       }
       
       return $st;
